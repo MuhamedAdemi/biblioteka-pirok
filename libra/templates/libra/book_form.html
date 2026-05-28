@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Katalog</a></li>
+    {% if book %}<li class="breadcrumb-item"><a href="{% url 'book_detail' book.pk %}">{{ book.title|truncatechars:40 }}</a></li>{% endif %}
+    <li class="breadcrumb-item active">{{ action }}</li>
+  </ol>
+</nav>
+
+<h4 class="mb-4"><i class="bi bi-book me-2"></i>{{ action }}</h4>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <!-- Basic info -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Të Dhënat Kryesore</div>
+        <div class="card-body row g-3">
+          <div class="col-12">
+            <label class="form-label">{{ form.title.label }} <span class="text-danger">*</span></label>
+            {{ form.title }}
+            {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.subtitle.label }}</label>
+            {{ form.subtitle }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.isbn.label }}</label>
+            {{ form.isbn }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.class_number.label }}</label>
+            {{ form.class_number }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Publication info -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Publikimi</div>
+        <div class="card-body row g-3">
+          <div class="col-md-8">
+            <label class="form-label">{{ form.publisher.label }}</label>
+            {{ form.publisher }}
+            <a href="{% url 'publisher_add' %}" target="_blank" class="small text-muted">+ Shto botues të ri</a>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.year.label }}</label>
+            {{ form.year }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.format.label }}</label>
+            {{ form.format }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.pages.label }}</label>
+            {{ form.pages }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.quantity.label }}</label>
+            {{ form.quantity }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Authors formset -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold d-flex justify-content-between">
+          Autorët
+          <a href="{% url 'author_add' %}" target="_blank" class="small text-muted">+ Shto autor të ri</a>
+        </div>
+        <div class="card-body">
+          {{ formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th style="width:45%">Autori</th>
+                  <th style="width:30%">Roli</th>
+                  <th style="width:10%">Rendi</th>
+                  <th>Fshi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for af in formset %}
+                <tr>
+                  <td>{{ af.author }}</td>
+                  <td>{{ af.role }}</td>
+                  <td>{{ af.order }}</td>
+                  <td>{{ af.DELETE }}</td>
+                  {{ af.id }}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Shënime dhe Përmbajtje</div>
+        <div class="card-body row g-3">
+          <div class="col-12">
+            <label class="form-label">{{ form.general_note.label }}</label>
+            {{ form.general_note }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.contents_note.label }}</label>
+            {{ form.contents_note }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.summary.label }}</label>
+            {{ form.summary }}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Subjects -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Kategoritë / Lëndët</div>
+        <div class="card-body">
+          {{ form.subjects }}
+          <small class="text-muted d-block mt-1">Mbaj Ctrl/Cmd për shumë zgjedhje</small>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="card">
+        <div class="card-body d-grid gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Ruaj
+          </button>
+          {% if book %}
+          <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary">Anulo</a>
+          {% else %}
+          <a href="{% url 'catalog' %}" class="btn btn-outline-secondary">Anulo</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

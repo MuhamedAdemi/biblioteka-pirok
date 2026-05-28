@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-person me-2"></i>{{ action }}</h4>
+<div class="row">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">{{ form.first_name.label }} <span class="text-danger">*</span></label>
+              {{ form.first_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ form.last_name.label }} <span class="text-danger">*</span></label>
+              {{ form.last_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ form.membership_number.label }}</label>
+              {{ form.membership_number }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ form.phone.label }}</label>
+              {{ form.phone }}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ form.email.label }}</label>
+              {{ form.email }}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ form.address.label }}</label>
+              {{ form.address }}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ form.notes.label }}</label>
+              {{ form.notes }}
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.is_active }}
+                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+              </div>
+            </div>
+          </div>
+          <hr>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check me-1"></i>Ruaj</button>
+            {% if member %}
+            <a href="{% url 'member_detail' member.pk %}" class="btn btn-outline-secondary">Anulo</a>
+            {% else %}
+            <a href="{% url 'member_list' %}" class="btn btn-outline-secondary">Anulo</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

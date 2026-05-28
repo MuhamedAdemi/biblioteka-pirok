@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}{{ book.title }} – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Katalog</a></li>
+    <li class="breadcrumb-item active">{{ book.title|truncatechars:50 }}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h4 class="mb-1">{{ book.title }}</h4>
+            {% if book.subtitle %}<p class="text-muted mb-0">{{ book.subtitle }}</p>{% endif %}
+          </div>
+          {% if user.is_authenticated %}
+          <div class="d-flex gap-2 ms-3 flex-shrink-0">
+            <a href="{% url 'book_edit' book.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil me-1"></i>Ndrysho
+            </a>
+            <a href="{% url 'book_delete' book.pk %}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash me-1"></i>Fshi
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        <table class="table table-borderless table-sm">
+          <tbody>
+            {% if primary_authors %}
+            <tr>
+              <th class="text-muted" style="width:200px">Autor Kryesor</th>
+              <td>
+                {% for ba in primary_authors %}{{ ba.author }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </td>
+            </tr>
+            {% endif %}
+
+            {% if secondary_authors %}
+            <tr>
+              <th class="text-muted">Autorë Dytësorë</th>
+              <td>
+                {% for ba in secondary_authors %}
+                  {{ ba.author }} <small class="text-muted">({{ ba.get_role_display }})</small>{% if not forloop.last %}; {% endif %}
+                {% endfor %}
+              </td>
+            </tr>
+            {% endif %}
+
+            {% if book.publisher %}
+            <tr>
+              <th class="text-muted">Botuesi</th>
+              <td>{{ book.publisher }}</td>
+            </tr>
+            {% endif %}
+
+            {% if book.year %}
+            <tr>
+              <th class="text-muted">Viti</th>
+              <td>{{ book.year }}</td>
+            </tr>
+            {% endif %}
+
+            {% if book.isbn %}
+            <tr>
+              <th class="text-muted">ISBN</th>
+              <td><code>{{ book.isbn }}</code></td>
+            </tr>
+            {% endif %}
+
+            {% if book.format %}
+            <tr>
+              <th class="text-muted">Formati</th>
+              <td>{{ book.format }}</td>
+            </tr>
+            {% endif %}
+
+            {% if book.pages %}
+            <tr>
+              <th class="text-muted">Faqet</th>
+              <td>{{ book.pages }}</td>
+            </tr>
+            {% endif %}
+
+            {% if book.class_number %}
+            <tr>
+              <th class="text-muted">Nr. Klasifikimit</th>
+              <td><code>{{ book.class_number }}</code></td>
+            </tr>
+            {% endif %}
+
+            <tr>
+              <th class="text-muted">Kopjet e Disponueshme</th>
+              <td>
+                {% with avail=book.available_copies %}
+                {% if avail > 0 %}
+                  <span class="badge badge-available">{{ avail }} nga {{ book.quantity }}</span>
+                {% else %}
+                  <span class="badge badge-unavailable">0 nga {{ book.quantity }} – Huazuar</span>
+                {% endif %}
+                {% endwith %}
+              </td>
+            </tr>
+
+            {% if book.subjects.all %}
+            <tr>
+              <th class="text-muted">Kategoritë</th>
+              <td>
+                {% for s in book.subjects.all %}
+                <a href="{% url 'catalog' %}?subject={{ s.id }}" class="badge bg-secondary text-decoration-none me-1">{{ s.name }}</a>
+                {% endfor %}
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if book.general_note %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Shënime të Përgjithshme</div>
+      <div class="card-body"><p class="mb-0" style="white-space:pre-line">{{ book.general_note }}</p></div>
+    </div>
+    {% endif %}
+
+    {% if book.contents_note %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-list-ul me-2"></i>Tabela e Përmbajtjes</div>
+      <div class="card-body"><p class="mb-0" style="white-space:pre-line">{{ book.contents_note }}</p></div>
+    </div>
+    {% endif %}
+
+    {% if book.summary %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-text-paragraph me-2"></i>Përmbledhje</div>
+      <div class="card-body"><p class="mb-0">{{ book.summary }}</p></div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if user.is_authenticated %}
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-arrow-left-right me-2"></i>Huazimet e këtij libri</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Anëtari</th><th>Data</th><th>Statusi</th></tr></thead>
+          <tbody>
+            {% for loan in book.loan_set.all|slice:":10" %}
+            <tr>
+              <td>{{ loan.member.full_name }}</td>
+              <td><small>{{ loan.loan_date }}</small></td>
+              <td>
+                {% if loan.status == 'active' %}<span class="badge bg-warning text-dark">Aktiv</span>
+                {% elif loan.status == 'returned' %}<span class="badge bg-success">Kthyer</span>
+                {% else %}<span class="badge bg-danger">Vonuar</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-muted text-center py-2">Asnjë huazim.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if user.is_authenticated %}
+      <div class="card-footer">
+        <a href="{% url 'loan_add' %}?book={{ book.pk }}" class="btn btn-sm btn-primary w-100">
+          <i class="bi bi-plus me-1"></i>Huazo Librin
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

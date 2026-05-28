@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h4 class="mb-3"><i class="bi bi-arrow-right-circle me-2"></i>{{ action }}</h4>
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">{{ form.book.label }} <span class="text-danger">*</span></label>
+            {{ form.book }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.member.label }} <span class="text-danger">*</span></label>
+            {{ form.member }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.due_date.label }} <span class="text-danger">*</span></label>
+            {{ form.due_date }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check me-1"></i>Regjistro</button>
+            <a href="{% url 'loan_list' %}" class="btn btn-outline-secondary">Anulo</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

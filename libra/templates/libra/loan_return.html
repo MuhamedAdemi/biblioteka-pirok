@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Kthe Librin – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h4 class="mb-3"><i class="bi bi-arrow-return-left me-2"></i>Kthe Librin</h4>
+    <div class="card mb-3">
+      <div class="card-body">
+        <p class="mb-1"><strong>Libri:</strong> {{ loan.book.title }}</p>
+        <p class="mb-1"><strong>Anëtari:</strong> {{ loan.member.full_name }}</p>
+        <p class="mb-0"><strong>Huazuar më:</strong> {{ loan.loan_date }} &nbsp;|&nbsp; <strong>Afati:</strong> {{ loan.due_date }}</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">{{ form.return_date.label }}</label>
+            {{ form.return_date }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success"><i class="bi bi-check me-1"></i>Konfirmo Kthimin</button>
+            <a href="{% url 'loan_list' %}" class="btn btn-outline-secondary">Anulo</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

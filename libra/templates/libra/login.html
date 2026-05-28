@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Hyrje – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-sm-8 col-md-5 col-lg-4">
+    <div class="text-center mb-4">
+      <i class="bi bi-book-half display-4 text-dark"></i>
+      <h4 class="mt-2">Biblioteka Pirok</h4>
+      <p class="text-muted">Hyr për të menaxhuar bibliotekën</p>
+    </div>
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Emri i Përdoruesit</label>
+            <input type="text" name="username" class="form-control" autofocus required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Fjalëkalimi</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Hyr
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

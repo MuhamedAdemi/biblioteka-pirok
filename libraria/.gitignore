@@ -1,0 +1,6 @@
+# Ignore venv files (kjo dosje u krijua gabimisht si venv)
+Lib/
+Scripts/
+pyvenv.cfg
+__pycache__/
+*.pyc

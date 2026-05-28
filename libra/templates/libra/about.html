@@ -1,0 +1,33 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+
+<h1>About</h1>
+
+
+{% if numer > 10 %}
+<p>numri eshte me i madhe se 10</p>
+{% elif numer == 10 %}
+<p>numri eshte 10</p>
+{% else  %}
+<p>numri eshte me i vogel se 10</p>
+{% endif %} 
+<hr>
+<h1> Projektet </h1>
+
+<ul>
+    {% for project in projects %}
+        <li> Title:<a href = "{% url 'kursi' project.id %}"> {{project.title}}</a> --- {{project.description}}</li>
+    {% endfor %}
+</ul>
+
+
+
+{% endblock content %}
+
+
+
+
+
+

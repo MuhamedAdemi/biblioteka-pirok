@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Fshi Librin – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle me-2"></i>Konfirmo Fshirjen
+      </div>
+      <div class="card-body">
+        <p>A jeni i sigurt që doni të fshini librin:</p>
+        <h5>{{ book.title }}</h5>
+        {% if book.primary_author %}<p class="text-muted">{{ book.primary_author }}</p>{% endif %}
+        <p class="text-danger small"><i class="bi bi-info-circle me-1"></i>Kjo veprim nuk mund të kthehet.</p>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Po, Fshi</button>
+        </form>
+        <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary">Anulo</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

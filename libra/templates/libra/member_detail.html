@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ member.full_name }} – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'member_list' %}">Anëtarët</a></li>
+    <li class="breadcrumb-item active">{{ member.full_name }}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="mb-1">{{ member.full_name }}</h5>
+            <code class="text-muted">Nr. {{ member.membership_number }}</code>
+          </div>
+          <a href="{% url 'member_edit' member.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
+        <hr>
+        {% if member.phone %}<p class="mb-1"><i class="bi bi-telephone me-2 text-muted"></i>{{ member.phone }}</p>{% endif %}
+        {% if member.email %}<p class="mb-1"><i class="bi bi-envelope me-2 text-muted"></i>{{ member.email }}</p>{% endif %}
+        {% if member.address %}<p class="mb-1"><i class="bi bi-geo-alt me-2 text-muted"></i>{{ member.address }}</p>{% endif %}
+        <p class="mb-1"><i class="bi bi-calendar me-2 text-muted"></i>Anëtar që {{ member.membership_date }}</p>
+        <p class="mb-0">
+          {% if member.is_active %}<span class="badge bg-success">Aktiv</span>
+          {% else %}<span class="badge bg-secondary">Joaktiv</span>{% endif %}
+        </p>
+        {% if member.notes %}<hr><p class="text-muted small mb-0">{{ member.notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-arrow-left-right me-2"></i>Historia e Huazimeve</span>
+        <a href="{% url 'loan_add' %}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus me-1"></i>Huazo Libër
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr><th>Libri</th><th>Huazuar</th><th>Afati</th><th>Kthyer</th><th>Statusi</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for loan in loans %}
+            <tr>
+              <td><a href="{% url 'book_detail' loan.book.pk %}" class="text-decoration-none">{{ loan.book.title|truncatechars:40 }}</a></td>
+              <td><small>{{ loan.loan_date }}</small></td>
+              <td><small>{{ loan.due_date }}</small></td>
+              <td><small>{{ loan.return_date|default:"-" }}</small></td>
+              <td>
+                {% if loan.status == 'active' %}<span class="badge bg-warning text-dark">Aktiv</span>
+                {% elif loan.status == 'returned' %}<span class="badge bg-success">Kthyer</span>
+                {% else %}<span class="badge bg-danger">Vonuar</span>{% endif %}
+              </td>
+              <td>
+                {% if loan.status != 'returned' %}
+                <a href="{% url 'loan_return' loan.pk %}" class="btn btn-sm btn-outline-success">Kthe</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Asnjë huazim.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
