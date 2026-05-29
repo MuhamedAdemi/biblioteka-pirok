@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Kopjet e Librit – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Katalog</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'book_detail' book.pk %}">{{ book.title|truncatechars:40 }}</a></li>
+    <li class="breadcrumb-item active">Kopjet</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-upc me-2"></i>Kopjet Fizike — {{ book.title|truncatechars:50 }}</h5>
+  <a href="{% url 'book_copy_add' book.pk %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus me-1"></i>Shto Kopje
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nr. Kopjes (Barkod)</th>
+          <th>Statusi</th>
+          <th>Huazuar te</th>
+          <th>Shënime</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for copy in copies %}
+        {% with loan=copy.loan_set.filter %}
+        <tr>
+          <td><code class="fs-5">{{ copy.copy_number }}</code></td>
+          <td>
+            {% if copy.is_available %}
+              <span class="badge badge-available"><i class="bi bi-check-circle me-1"></i>E lirë</span>
+            {% else %}
+              <span class="badge badge-unavailable"><i class="bi bi-x-circle me-1"></i>E huazuar</span>
+            {% endif %}
+          </td>
+          <td>
+            {% with active_loan=copy.loan_set.all %}
+              {% for l in active_loan %}
+                {% if l.status in 'active,overdue' %}
+                  <a href="{% url 'member_detail' l.member.pk %}">{{ l.member.full_name }}</a>
+                  <small class="text-muted">(afati: {{ l.due_date }})</small>
+                {% endif %}
+              {% endfor %}
+            {% endwith %}
+          </td>
+          <td><small class="text-muted">{{ copy.notes|default:"-" }}</small></td>
+          <td>
+            {% if copy.is_available %}
+            <form method="post" action="{% url 'book_copy_delete' copy.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Fshi kopjen {{ copy.copy_number }}?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            Ky libër nuk ka kopje fizike të regjistruara.
+            <a href="{% url 'book_copy_add' book.pk %}">Shto kopje</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Kthehu te Libri
+  </a>
+</div>
+{% endblock %}

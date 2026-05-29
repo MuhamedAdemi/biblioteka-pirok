@@ -27,10 +27,17 @@
         {% if member.email %}<p class="mb-1"><i class="bi bi-envelope me-2 text-muted"></i>{{ member.email }}</p>{% endif %}
         {% if member.address %}<p class="mb-1"><i class="bi bi-geo-alt me-2 text-muted"></i>{{ member.address }}</p>{% endif %}
         <p class="mb-1"><i class="bi bi-calendar me-2 text-muted"></i>Anëtar që {{ member.membership_date }}</p>
-        <p class="mb-0">
+        <p class="mb-2">
           {% if member.is_active %}<span class="badge bg-success">Aktiv</span>
           {% else %}<span class="badge bg-secondary">Joaktiv</span>{% endif %}
         </p>
+        {% if member.user %}
+          <span class="badge bg-info text-dark"><i class="bi bi-person-check me-1"></i>Ka llogari hyrje</span>
+        {% else %}
+          <a href="{% url 'member_create_account' member.pk %}" class="btn btn-sm btn-outline-primary mt-1">
+            <i class="bi bi-person-plus me-1"></i>Krijo Llogari Hyrje
+          </a>
+        {% endif %}
         {% if member.notes %}<hr><p class="text-muted small mb-0">{{ member.notes }}</p>{% endif %}
       </div>
     </div>

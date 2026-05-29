@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Kthe Libër – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <h4 class="mb-4 text-center"><i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthim i Shpejtë</h4>
+
+    <div class="card mb-3">
+      <div class="card-body text-center py-4">
+        <p class="text-muted mb-3">Skano ose shtyp numrin e kopjes</p>
+        <form method="post" autocomplete="off">
+          {% csrf_token %}
+          <div class="d-flex justify-content-center mb-3">
+            {{ form.copy_number }}
+          </div>
+          <button type="submit" class="btn btn-warning btn-lg px-5 quick-btn">
+            <i class="bi bi-arrow-return-left me-2"></i>Kthe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% if result %}
+      {% if result.success %}
+      <div class="card border-success">
+        <div class="card-body text-center text-success py-3">
+          <i class="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
+          <h5>Libri u kthye me sukses!</h5>
+          <p class="mb-1"><strong>{{ result.copy.book.title }}</strong></p>
+          <p class="mb-0 text-muted">Anëtari: {{ result.loan.member.full_name }} · Kopja: <code>{{ result.copy.copy_number }}</code></p>
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-danger">
+        <div class="card-body text-center text-danger py-3">
+          <i class="bi bi-x-circle-fill fs-1 d-block mb-2"></i>
+          <p class="mb-0">{{ result.msg }}</p>
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <div class="text-center mt-3">
+      <a href="{% url 'quick_loan' %}" class="btn btn-outline-success">
+        <i class="bi bi-arrow-right-circle me-1"></i>Kalo te Huazimi i Shpejtë
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

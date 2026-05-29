@@ -41,11 +41,19 @@
             {% elif loan.status == 'returned' %}<span class="badge bg-success">Kthyer</span>
             {% else %}<span class="badge bg-danger">Vonuar</span>{% endif %}
           </td>
-          <td>
+          <td class="d-flex gap-1 flex-wrap">
             {% if loan.status != 'returned' %}
             <a href="{% url 'loan_return' loan.pk %}" class="btn btn-sm btn-outline-success">
               <i class="bi bi-arrow-return-left me-1"></i>Kthe
             </a>
+            {% if loan.can_renew %}
+            <form method="post" action="{% url 'loan_renew' loan.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-clockwise"></i> +14d
+              </button>
+            </form>
+            {% endif %}
             {% endif %}
           </td>
         </tr>

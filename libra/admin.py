@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Book, BookAuthor, Author, Publisher, Subject, Member, Loan
+from .models import Book, BookAuthor, BookCopy, Author, Publisher, Subject, Member, Loan
 
 
 class BookAuthorInline(admin.TabularInline):
@@ -8,20 +8,33 @@ class BookAuthorInline(admin.TabularInline):
     autocomplete_fields = ['author']
 
 
+class BookCopyInline(admin.TabularInline):
+    model = BookCopy
+    extra = 1
+    readonly_fields = ['copy_number']
+
+
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ['title', 'primary_author', 'publisher', 'year', 'isbn', 'class_number', 'quantity']
+    list_display = ['title', 'primary_author', 'publisher', 'year', 'isbn', 'class_number', 'total_copies']
     list_filter = ['year', 'publisher', 'subjects']
     search_fields = ['title', 'subtitle', 'isbn', 'class_number',
                      'book_authors__author__last_name']
-    inlines = [BookAuthorInline]
+    inlines = [BookAuthorInline, BookCopyInline]
     filter_horizontal = ['subjects']
     fieldsets = (
-        (None, {'fields': ('title', 'subtitle', 'isbn', 'class_number', 'quantity')}),
+        (None, {'fields': ('title', 'subtitle', 'isbn', 'class_number')}),
         ('Publikimi', {'fields': ('publisher', 'year', 'format', 'pages')}),
         ('Shënime', {'fields': ('general_note', 'contents_note', 'summary')}),
         ('Kategoritë', {'fields': ('subjects',)}),
     )
+
+
+@admin.register(BookCopy)
+class BookCopyAdmin(admin.ModelAdmin):
+    list_display = ['copy_number', 'book', 'is_available', 'notes']
+    search_fields = ['copy_number', 'book__title']
+    autocomplete_fields = ['book']
 
 
 @admin.register(Author)
@@ -50,7 +63,7 @@ class MemberAdmin(admin.ModelAdmin):
 
 @admin.register(Loan)
 class LoanAdmin(admin.ModelAdmin):
-    list_display = ['book', 'member', 'loan_date', 'due_date', 'status']
+    list_display = ['__str__', 'member', 'loan_date', 'due_date', 'status', 'renewals_count']
     list_filter = ['status', 'loan_date']
-    search_fields = ['book__title', 'member__last_name', 'member__first_name']
-    autocomplete_fields = ['book', 'member']
+    search_fields = ['copy__book__title', 'member__last_name', 'member__first_name', 'copy__copy_number']
+    autocomplete_fields = ['copy', 'member']

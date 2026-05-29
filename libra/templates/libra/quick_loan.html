@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Huazo Libër – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <h4 class="mb-4 text-center"><i class="bi bi-arrow-right-circle me-2 text-success"></i>Huazim i Shpejtë</h4>
+
+    <div class="card mb-3">
+      <div class="card-body py-4">
+        <form method="post" autocomplete="off">
+          {% csrf_token %}
+          <div class="row g-3 mb-3">
+            <div class="col-12 text-center">
+              <label class="form-label fw-semibold">{{ form.member_number.label }}</label>
+              {{ form.member_number }}
+            </div>
+            <div class="col-12 text-center">
+              <label class="form-label fw-semibold">{{ form.copy_number.label }}</label>
+              {{ form.copy_number }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.due_days.label }}</label>
+              <div class="d-flex gap-2 align-items-center justify-content-center">
+                {{ form.due_days }}
+                <span class="text-muted">ditë</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-center">
+            <button type="submit" class="btn btn-success btn-lg px-5 quick-btn">
+              <i class="bi bi-arrow-right-circle me-2"></i>Huazo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if result and result.success %}
+    <div class="card border-success">
+      <div class="card-body text-center text-success py-3">
+        <i class="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
+        <h5>Huazimi u regjistrua!</h5>
+        <p class="mb-1"><strong>{{ result.loan.copy.book.title }}</strong></p>
+        <p class="mb-0 text-muted">
+          Kopja: <code>{{ result.loan.copy.copy_number }}</code> &nbsp;|&nbsp;
+          Anëtari: {{ result.loan.member.full_name }} &nbsp;|&nbsp;
+          Afati: <strong>{{ result.loan.due_date }}</strong>
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-3">
+      <a href="{% url 'quick_return' %}" class="btn btn-outline-warning">
+        <i class="bi bi-arrow-return-left me-1"></i>Kalo te Kthimi i Shpejtë
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

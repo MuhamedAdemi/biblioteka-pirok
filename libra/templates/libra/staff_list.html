@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Stafi – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-shield-check me-2"></i>Menaxhimi i Stafit</h4>
+  <a href="{% url 'staff_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus me-1"></i>Shto Punonjës</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>Username</th><th>Emri</th><th>Email</th><th>Statusi</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for u in staff_users %}
+        <tr>
+          <td><code>{{ u.username }}</code></td>
+          <td>{{ u.get_full_name|default:"-" }}</td>
+          <td>{{ u.email|default:"-" }}</td>
+          <td>
+            {% if u.is_active %}<span class="badge bg-success">Aktiv</span>
+            {% else %}<span class="badge bg-secondary">Çaktivizuar</span>{% endif %}
+          </td>
+          <td>
+            <form method="post" action="{% url 'staff_toggle' u.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm {% if u.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                {% if u.is_active %}<i class="bi bi-pause-circle me-1"></i>Çaktivizo
+                {% else %}<i class="bi bi-play-circle me-1"></i>Aktivizo{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Asnjë punonjës i regjistruar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <i class="bi bi-info-circle me-2"></i>
+  Punonjësit e stafit mund të regjistrojnë libra, anëtarë dhe huazime. Vetëm super-admini mund të menaxhojë stafin.
+</div>
+{% endblock %}

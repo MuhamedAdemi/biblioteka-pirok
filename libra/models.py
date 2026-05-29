@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Publisher(models.Model):
@@ -55,8 +56,7 @@ class Book(models.Model):
     general_note = models.TextField(blank=True, verbose_name="Shënime të përgjithshme")
     contents_note = models.TextField(blank=True, verbose_name="Shënime mbi përmbajtjen")
     summary = models.TextField(blank=True, verbose_name="Përmbledhje")
-    subjects = models.ManyToManyField(Subject, blank=True, verbose_name="Kategorite")
-    quantity = models.PositiveIntegerField(default=1, verbose_name="Sasia")
+    subjects = models.ManyToManyField(Subject, blank=True, verbose_name="Kategoritë")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -69,9 +69,15 @@ class Book(models.Model):
         ba = self.book_authors.filter(role='primary').first()
         return ba.author if ba else None
 
+    def total_copies(self):
+        return self.copies.count()
+
     def available_copies(self):
-        loaned = self.loan_set.filter(status='active').count()
-        return self.quantity - loaned
+        on_loan_ids = Loan.objects.filter(
+            copy__book=self,
+            status__in=['active', 'overdue']
+        ).values_list('copy_id', flat=True).distinct()
+        return self.copies.exclude(pk__in=on_loan_ids).count()
 
 
 class BookAuthor(models.Model):
@@ -93,14 +99,45 @@ class BookAuthor(models.Model):
         return f"{self.author} ({self.get_role_display()})"
 
 
+class BookCopy(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='copies', verbose_name="Libri")
+    copy_number = models.CharField(max_length=8, unique=True, verbose_name="Nr. Kopjes (Barkod)")
+    notes = models.CharField(max_length=200, blank=True, verbose_name="Shënime")
+
+    class Meta:
+        ordering = ['copy_number']
+        verbose_name = "Kopje Libri"
+        verbose_name_plural = "Kopjet e Librave"
+
+    def __str__(self):
+        return f"[{self.copy_number}] {self.book.title}"
+
+    def is_available(self):
+        return not self.loan_set.filter(status__in=['active', 'overdue']).exists()
+
+    @classmethod
+    def next_copy_number(cls):
+        last = cls.objects.order_by('-copy_number').first()
+        if last:
+            try:
+                return str(int(last.copy_number) + 1).zfill(4)
+            except ValueError:
+                pass
+        return '0001'
+
+
 class Member(models.Model):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    user = models.OneToOneField(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        verbose_name="Llogaria", related_name='member'
+    )
     first_name = models.CharField(max_length=150, verbose_name="Emri")
     last_name = models.CharField(max_length=150, verbose_name="Mbiemri")
     email = models.EmailField(blank=True, verbose_name="Email")
     phone = models.CharField(max_length=30, blank=True, verbose_name="Telefoni")
     address = models.TextField(blank=True, verbose_name="Adresa")
-    membership_number = models.CharField(max_length=50, unique=True, verbose_name="Nr. Anëtarësisë")
+    membership_number = models.CharField(max_length=8, unique=True, verbose_name="Nr. Anëtarësisë")
     membership_date = models.DateField(auto_now_add=True, verbose_name="Data e Anëtarësimit")
     is_active = models.BooleanField(default=True, verbose_name="Aktiv")
     notes = models.TextField(blank=True, verbose_name="Shënime")
@@ -115,7 +152,7 @@ class Member(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     def active_loans(self):
-        return self.loan_set.filter(status='active').count()
+        return self.loan_set.filter(status__in=['active', 'overdue']).count()
 
 
 class Loan(models.Model):
@@ -125,18 +162,26 @@ class Loan(models.Model):
         ('overdue', 'Vonuar'),
     ]
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Libri")
+    copy = models.ForeignKey(BookCopy, on_delete=models.CASCADE, verbose_name="Kopja e Librit")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, verbose_name="Anëtari")
     loan_date = models.DateField(auto_now_add=True, verbose_name="Data e Huazimit")
-    due_date = models.DateField(verbose_name="Data e Kthimit")
+    due_date = models.DateField(verbose_name="Afati i Kthimit")
     return_date = models.DateField(null=True, blank=True, verbose_name="Kthyer më")
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="Statusi"
     )
+    renewals_count = models.PositiveIntegerField(default=0, verbose_name="Nr. Vazhdimeve")
     notes = models.TextField(blank=True, verbose_name="Shënime")
 
     class Meta:
         ordering = ['-loan_date']
 
     def __str__(self):
-        return f"{self.book.title} → {self.member}"
+        return f"{self.copy.book.title} → {self.member}"
+
+    @property
+    def book(self):
+        return self.copy.book
+
+    def can_renew(self):
+        return self.status in ['active', 'overdue'] and self.renewals_count < 2

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Vazhdo Huazimin – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h4 class="mb-3"><i class="bi bi-arrow-clockwise me-2"></i>Vazhdo Huazimin</h4>
+    <div class="card mb-3">
+      <div class="card-body">
+        <p class="mb-1"><strong>Libri:</strong> {{ loan.copy.book.title }}</p>
+        <p class="mb-1"><strong>Kopja:</strong> <code>{{ loan.copy.copy_number }}</code></p>
+        <p class="mb-1"><strong>Anëtari:</strong> {{ loan.member.full_name }}</p>
+        <p class="mb-1"><strong>Afati aktual:</strong> {{ loan.due_date }}</p>
+        <p class="mb-0"><strong>Vazhdime të bëra:</strong> {{ loan.renewals_count }}/2</p>
+      </div>
+    </div>
+    <div class="card border-primary">
+      <div class="card-body text-center py-4">
+        <p class="text-muted">Duke klikuar "Vazhdo", afati zgjatet me <strong>14 ditë</strong>.</p>
+        <p class="fs-5">Afati i ri do të jetë: <strong>{{ loan.due_date|date:"d M Y" }}</strong> + 14 ditë</p>
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-lg me-2">
+            <i class="bi bi-arrow-clockwise me-1"></i>Vazhdo 14 Ditë
+          </button>
+          <a href="{% url 'member_dashboard' %}" class="btn btn-outline-secondary btn-lg">Anulo</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

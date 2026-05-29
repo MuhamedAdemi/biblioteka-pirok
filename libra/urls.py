@@ -5,12 +5,18 @@ urlpatterns = [
     # Public
     path('', views.home, name='home'),
     path('katalog/', views.catalog, name='catalog'),
+    path('rreth-nesh/', views.about, name='about'),
     path('librat/<uuid:pk>/', views.book_detail, name='book_detail'),
 
     # Books (staff)
     path('librat/shto/', views.book_add, name='book_add'),
     path('librat/<uuid:pk>/ndrysho/', views.book_edit, name='book_edit'),
     path('librat/<uuid:pk>/fshi/', views.book_delete, name='book_delete'),
+
+    # Book copies
+    path('librat/<uuid:pk>/kopje/', views.book_copy_list, name='book_copy_list'),
+    path('librat/<uuid:pk>/kopje/shto/', views.book_copy_add, name='book_copy_add'),
+    path('kopje/<int:copy_pk>/fshi/', views.book_copy_delete, name='book_copy_delete'),
 
     # Authors
     path('autore/', views.author_list, name='author_list'),
@@ -26,11 +32,25 @@ urlpatterns = [
     path('anetaret/shto/', views.member_add, name='member_add'),
     path('anetaret/<uuid:pk>/', views.member_detail, name='member_detail'),
     path('anetaret/<uuid:pk>/ndrysho/', views.member_edit, name='member_edit'),
+    path('anetaret/<uuid:pk>/llogari/', views.member_create_account, name='member_create_account'),
 
     # Loans
     path('huazime/', views.loan_list, name='loan_list'),
     path('huazime/shto/', views.loan_add, name='loan_add'),
     path('huazime/<uuid:pk>/kthe/', views.loan_return, name='loan_return'),
+    path('huazime/<uuid:pk>/vazhdo/', views.loan_renew, name='loan_renew'),
+
+    # Quick desk operations
+    path('kthe/', views.quick_return, name='quick_return'),
+    path('huazo/', views.quick_loan, name='quick_loan'),
+
+    # Staff management (superuser only)
+    path('stafi/', views.staff_list, name='staff_list'),
+    path('stafi/shto/', views.staff_create, name='staff_create'),
+    path('stafi/<int:pk>/toggle/', views.staff_toggle, name='staff_toggle'),
+
+    # Member dashboard
+    path('dashboard/', views.member_dashboard, name='member_dashboard'),
 
     # Auth
     path('hyrje/', views.login_view, name='login'),

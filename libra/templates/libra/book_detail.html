@@ -97,11 +97,16 @@
             <tr>
               <th class="text-muted">Kopjet e Disponueshme</th>
               <td>
-                {% with avail=book.available_copies %}
+                {% with avail=book.available_copies total=book.total_copies %}
                 {% if avail > 0 %}
-                  <span class="badge badge-available">{{ avail }} nga {{ book.quantity }}</span>
+                  <span class="badge badge-available">{{ avail }} nga {{ total }} të lira</span>
                 {% else %}
-                  <span class="badge badge-unavailable">0 nga {{ book.quantity }} – Huazuar</span>
+                  <span class="badge badge-unavailable">0 nga {{ total }} – Të gjitha huazuara</span>
+                {% endif %}
+                {% if user.is_staff %}
+                <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-sm btn-outline-secondary ms-2">
+                  <i class="bi bi-upc me-1"></i>Menaxho Kopjet
+                </a>
                 {% endif %}
                 {% endwith %}
               </td>

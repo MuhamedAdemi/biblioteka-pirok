@@ -1,35 +1,36 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Book, Author, Publisher, Member, Loan, Subject, BookAuthor
+from .models import Book, Author, Publisher, Member, Loan, Subject, BookAuthor, BookCopy
 from .forms import (
-    BookForm, BookAuthorFormSet, MemberForm, LoanForm,
-    LoanReturnForm, SearchForm, AuthorForm, PublisherForm,
+    BookForm, BookAuthorFormSet, BookCopyForm,
+    MemberForm, LoanForm, LoanReturnForm,
+    QuickReturnForm, QuickLoanForm,
+    StaffCreateForm, SearchForm, AuthorForm, PublisherForm,
 )
 
 
-# ── PUBLIC VIEWS ──────────────────────────────────────────────────────────────
+# ── PUBLIC ────────────────────────────────────────────────────────────────────
 
 def home(request):
     recent_books = Book.objects.all().order_by('-created')[:8]
     total_books = Book.objects.count()
     total_members = Member.objects.filter(is_active=True).count()
     active_loans = Loan.objects.filter(status='active').count()
-    context = {
+    return render(request, 'libra/home.html', {
         'recent_books': recent_books,
         'total_books': total_books,
         'total_members': total_members,
         'active_loans': active_loans,
-    }
-    return render(request, 'libra/home.html', context)
+    })
 
 
 def catalog(request):
-    form = SearchForm(request.GET)
     books = Book.objects.all().prefetch_related('book_authors__author', 'subjects')
     q = request.GET.get('q', '').strip()
     if q:
@@ -47,29 +48,86 @@ def catalog(request):
     if subject_filter:
         books = books.filter(subjects__id=subject_filter)
     subjects = Subject.objects.all()
-    context = {
-        'books': books,
-        'form': form,
-        'q': q,
-        'subjects': subjects,
-        'subject_filter': subject_filter,
-    }
-    return render(request, 'libra/catalog.html', context)
+    return render(request, 'libra/catalog.html', {
+        'books': books, 'q': q,
+        'subjects': subjects, 'subject_filter': subject_filter,
+    })
 
 
 def book_detail(request, pk):
     book = get_object_or_404(Book, pk=pk)
     primary_authors = book.book_authors.filter(role='primary').select_related('author')
     secondary_authors = book.book_authors.exclude(role='primary').select_related('author')
-    context = {
+    copies = book.copies.all()
+    return render(request, 'libra/book_detail.html', {
         'book': book,
         'primary_authors': primary_authors,
         'secondary_authors': secondary_authors,
-    }
-    return render(request, 'libra/book_detail.html', context)
+        'copies': copies,
+    })
 
 
-# ── BOOK MANAGEMENT (staff only) ─────────────────────────────────────────────
+def about(request):
+    return render(request, 'libra/about.html')
+
+
+# ── MEMBER DASHBOARD ──────────────────────────────────────────────────────────
+
+def member_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.is_staff:
+        return redirect('home')
+    try:
+        member = request.user.member
+    except Exception:
+        messages.error(request, 'Llogaria juaj nuk është e lidhur me asnjë anëtar.')
+        return redirect('home')
+
+    _mark_overdue()
+    active_loans = member.loan_set.filter(
+        status__in=['active', 'overdue']
+    ).select_related('copy__book').order_by('due_date')
+    loan_history = member.loan_set.filter(
+        status='returned'
+    ).select_related('copy__book').order_by('-return_date')[:10]
+
+    return render(request, 'libra/member_dashboard.html', {
+        'member': member,
+        'active_loans': active_loans,
+        'loan_history': loan_history,
+    })
+
+
+def loan_renew(request, pk):
+    loan = get_object_or_404(Loan, pk=pk)
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    is_owner = (
+        hasattr(request.user, 'member') and
+        request.user.member == loan.member
+    )
+    if not is_owner and not request.user.is_staff:
+        messages.error(request, 'Nuk keni leje për këtë veprim.')
+        return redirect('home')
+
+    if not loan.can_renew():
+        messages.error(request, 'Ky huazim nuk mund të vazhdohet (u arrit kufiri i 2 vazhdimeve).')
+        return redirect('member_dashboard' if is_owner else 'loan_list')
+
+    if request.method == 'POST':
+        loan.due_date = loan.due_date + timezone.timedelta(days=14)
+        loan.renewals_count += 1
+        loan.status = 'active'
+        loan.save()
+        messages.success(request, f'Huazimi u vazhdua. Afati i ri: {loan.due_date}')
+        return redirect('member_dashboard' if is_owner else 'loan_list')
+
+    return render(request, 'libra/loan_renew.html', {'loan': loan})
+
+
+# ── BOOK MANAGEMENT ───────────────────────────────────────────────────────────
 
 @login_required
 def book_add(request):
@@ -80,8 +138,8 @@ def book_add(request):
             book = form.save()
             formset.instance = book
             formset.save()
-            messages.success(request, f'Libri "{book.title}" u shtua me sukses.')
-            return redirect('book_detail', pk=book.pk)
+            messages.success(request, f'Libri "{book.title}" u shtua. Shto kopjet fizike më poshtë.')
+            return redirect('book_copy_list', pk=book.pk)
     else:
         form = BookForm()
         formset = BookAuthorFormSet()
@@ -120,7 +178,45 @@ def book_delete(request, pk):
     return render(request, 'libra/book_confirm_delete.html', {'book': book})
 
 
-# ── AUTHOR MANAGEMENT ────────────────────────────────────────────────────────
+# ── BOOK COPIES ───────────────────────────────────────────────────────────────
+
+@login_required
+def book_copy_list(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    copies = book.copies.all()
+    return render(request, 'libra/book_copy_list.html', {'book': book, 'copies': copies})
+
+
+@login_required
+def book_copy_add(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    if request.method == 'POST':
+        form = BookCopyForm(request.POST)
+        if form.is_valid():
+            copy = form.save(commit=False)
+            copy.book = book
+            copy.save()
+            messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
+            return redirect('book_copy_list', pk=pk)
+    else:
+        form = BookCopyForm(initial={'copy_number': BookCopy.next_copy_number()})
+    return render(request, 'libra/book_copy_form.html', {'form': form, 'book': book})
+
+
+@login_required
+def book_copy_delete(request, copy_pk):
+    copy = get_object_or_404(BookCopy, pk=copy_pk)
+    book_pk = copy.book.pk
+    if request.method == 'POST':
+        if copy.loan_set.filter(status__in=['active', 'overdue']).exists():
+            messages.error(request, 'Nuk mund të fshihet kopja — ka huazim aktiv.')
+        else:
+            copy.delete()
+            messages.success(request, 'Kopja u fshi.')
+    return redirect('book_copy_list', pk=book_pk)
+
+
+# ── AUTHORS & PUBLISHERS ──────────────────────────────────────────────────────
 
 @login_required
 def author_list(request):
@@ -148,14 +244,14 @@ def author_edit(request, pk):
         form = AuthorForm(request.POST, instance=author)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Autori "{author}" u përditësua.')
+            messages.success(request, f'Autori u përditësua.')
             return redirect('author_list')
     else:
         form = AuthorForm(instance=author)
-    return render(request, 'libra/author_form.html', {'form': form, 'action': 'Ndrysho Autor', 'author': author})
+    return render(request, 'libra/author_form.html', {
+        'form': form, 'action': 'Ndrysho Autor', 'author': author
+    })
 
-
-# ── PUBLISHER MANAGEMENT ─────────────────────────────────────────────────────
 
 @login_required
 def publisher_list(request):
@@ -176,7 +272,7 @@ def publisher_add(request):
     return render(request, 'libra/publisher_form.html', {'form': form, 'action': 'Shto Botues'})
 
 
-# ── MEMBER MANAGEMENT ────────────────────────────────────────────────────────
+# ── MEMBERS ───────────────────────────────────────────────────────────────────
 
 @login_required
 def member_list(request):
@@ -195,7 +291,7 @@ def member_list(request):
 @login_required
 def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
-    loans = member.loan_set.all().select_related('book').order_by('-loan_date')
+    loans = member.loan_set.all().select_related('copy__book').order_by('-loan_date')
     return render(request, 'libra/member_detail.html', {'member': member, 'loans': loans})
 
 
@@ -208,7 +304,6 @@ def member_add(request):
             messages.success(request, f'Anëtari "{member.full_name()}" u regjistrua.')
             return redirect('member_detail', pk=member.pk)
     else:
-        # auto-generate next membership number
         last = Member.objects.order_by('-membership_date').first()
         next_num = 1
         if last:
@@ -236,18 +331,50 @@ def member_edit(request, pk):
     })
 
 
-# ── LOAN MANAGEMENT ──────────────────────────────────────────────────────────
+@login_required
+def member_create_account(request, pk):
+    member = get_object_or_404(Member, pk=pk)
+    if member.user:
+        messages.warning(request, 'Ky anëtar ka tashmë llogari hyrje.')
+        return redirect('member_detail', pk=pk)
+    if request.method == 'POST':
+        password = request.POST.get('password', '').strip()
+        if len(password) < 6:
+            messages.error(request, 'Fjalëkalimi duhet të ketë të paktën 6 karaktere.')
+        elif User.objects.filter(username=member.membership_number).exists():
+            messages.error(request, f'Username "{member.membership_number}" ekziston tashmë.')
+        else:
+            user = User.objects.create_user(
+                username=member.membership_number,
+                password=password,
+                first_name=member.first_name,
+                last_name=member.last_name,
+                email=member.email,
+            )
+            member.user = user
+            member.save()
+            messages.success(
+                request,
+                f'Llogaria u krijua. Anëtari hyn me: Nr. {member.membership_number}'
+            )
+            return redirect('member_detail', pk=pk)
+    return render(request, 'libra/member_create_account.html', {'member': member})
+
+
+# ── LOANS ─────────────────────────────────────────────────────────────────────
+
+def _mark_overdue():
+    today = timezone.now().date()
+    Loan.objects.filter(status='active', due_date__lt=today).update(status='overdue')
+
 
 @login_required
 def loan_list(request):
+    _mark_overdue()
     status_filter = request.GET.get('status', '')
-    loans = Loan.objects.all().select_related('book', 'member')
+    loans = Loan.objects.all().select_related('copy__book', 'member')
     if status_filter:
         loans = loans.filter(status=status_filter)
-    # auto-mark overdue
-    today = timezone.now().date()
-    Loan.objects.filter(status='active', due_date__lt=today).update(status='overdue')
-    loans = loans.select_related('book', 'member')
     return render(request, 'libra/loan_list.html', {
         'loans': loans, 'status_filter': status_filter
     })
@@ -258,12 +385,15 @@ def loan_add(request):
     if request.method == 'POST':
         form = LoanForm(request.POST)
         if form.is_valid():
-            book = form.cleaned_data['book']
-            if book.available_copies() <= 0:
-                messages.error(request, f'Libri "{book.title}" nuk ka kopje të disponueshme.')
+            copy = form.cleaned_data['copy']
+            if not copy.is_available():
+                messages.error(request, f'Kopja [{copy.copy_number}] nuk është e disponueshme.')
             else:
                 loan = form.save()
-                messages.success(request, f'Huazimi u regjistrua: "{loan.book.title}" → {loan.member.full_name()}')
+                messages.success(
+                    request,
+                    f'U huazua: "{loan.copy.book.title}" [{loan.copy.copy_number}] → {loan.member.full_name()}'
+                )
                 return redirect('loan_list')
     else:
         form = LoanForm()
@@ -277,7 +407,7 @@ def loan_return(request, pk):
         form = LoanReturnForm(request.POST, instance=loan)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Libri "{loan.book.title}" u kthye.')
+            messages.success(request, f'Libri "{loan.copy.book.title}" u kthye.')
             return redirect('loan_list')
     else:
         form = LoanReturnForm(instance=loan, initial={
@@ -287,19 +417,141 @@ def loan_return(request, pk):
     return render(request, 'libra/loan_return.html', {'form': form, 'loan': loan})
 
 
+# ── QUICK OPERATIONS (desk) ───────────────────────────────────────────────────
+
+@login_required
+def quick_return(request):
+    result = None
+    form = QuickReturnForm()
+    if request.method == 'POST':
+        form = QuickReturnForm(request.POST)
+        if form.is_valid():
+            cn = form.cleaned_data['copy_number'].strip().zfill(4)
+            try:
+                copy = BookCopy.objects.select_related('book').get(copy_number=cn)
+                loan = Loan.objects.filter(
+                    copy=copy, status__in=['active', 'overdue']
+                ).select_related('member').first()
+                if loan:
+                    loan.status = 'returned'
+                    loan.return_date = timezone.now().date()
+                    loan.save()
+                    result = {'success': True, 'loan': loan, 'copy': copy}
+                    messages.success(
+                        request,
+                        f'✓ Libri "{copy.book.title}" u kthye nga {loan.member.full_name()}.'
+                    )
+                    form = QuickReturnForm()
+                else:
+                    result = {'success': False, 'msg': f'Kopja [{cn}] nuk ka huazim aktiv.'}
+            except BookCopy.DoesNotExist:
+                result = {'success': False, 'msg': f'Nuk u gjet kopja me nr. [{cn}].'}
+    return render(request, 'libra/quick_return.html', {'form': form, 'result': result})
+
+
+@login_required
+def quick_loan(request):
+    result = None
+    form = QuickLoanForm()
+    if request.method == 'POST':
+        form = QuickLoanForm(request.POST)
+        if form.is_valid():
+            mn = form.cleaned_data['member_number'].strip().zfill(4)
+            cn = form.cleaned_data['copy_number'].strip().zfill(4)
+            days = form.cleaned_data['due_days']
+            errors = []
+            member = copy = None
+            try:
+                member = Member.objects.get(membership_number=mn, is_active=True)
+            except Member.DoesNotExist:
+                errors.append(f'Anëtari nr. [{mn}] nuk u gjet ose është joaktiv.')
+            try:
+                copy = BookCopy.objects.select_related('book').get(copy_number=cn)
+                if not copy.is_available():
+                    errors.append(f'Kopja [{cn}] "{copy.book.title}" është tashmë e huazuar.')
+            except BookCopy.DoesNotExist:
+                errors.append(f'Kopja me nr. [{cn}] nuk ekziston.')
+            if not errors and member and copy:
+                due_date = timezone.now().date() + timezone.timedelta(days=days)
+                loan = Loan.objects.create(copy=copy, member=member, due_date=due_date)
+                result = {'success': True, 'loan': loan}
+                messages.success(
+                    request,
+                    f'✓ U huazua: [{cn}] "{copy.book.title}" → {member.full_name()} (afati: {due_date})'
+                )
+                form = QuickLoanForm()
+            else:
+                for e in errors:
+                    messages.error(request, e)
+    return render(request, 'libra/quick_loan.html', {'form': form, 'result': result})
+
+
+# ── STAFF MANAGEMENT ──────────────────────────────────────────────────────────
+
+@login_required
+def staff_list(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Vetëm super-admini mund të menaxhojë stafin.')
+        return redirect('home')
+    staff_users = User.objects.filter(is_staff=True, is_superuser=False).order_by('username')
+    return render(request, 'libra/staff_list.html', {'staff_users': staff_users})
+
+
+@login_required
+def staff_create(request):
+    if not request.user.is_superuser:
+        return redirect('home')
+    if request.method == 'POST':
+        form = StaffCreateForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_staff = True
+            user.save()
+            messages.success(request, f'Punonjësi "{user.username}" u shtua.')
+            return redirect('staff_list')
+    else:
+        form = StaffCreateForm()
+    return render(request, 'libra/staff_form.html', {'form': form})
+
+
+@login_required
+def staff_toggle(request, pk):
+    if not request.user.is_superuser:
+        return redirect('home')
+    user = get_object_or_404(User, pk=pk, is_superuser=False)
+    if request.method == 'POST':
+        user.is_active = not user.is_active
+        user.save()
+        status = 'aktivizua' if user.is_active else 'çaktivizua'
+        messages.success(request, f'Llogaria "{user.username}" u {status}.')
+    return redirect('staff_list')
+
+
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        if request.user.is_staff:
+            return redirect('home')
+        try:
+            return redirect('member_dashboard')
+        except Exception:
+            return redirect('home')
+
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            return redirect(request.GET.get('next', 'home'))
-        messages.error(request, 'Emri i përdoruesit ose fjalëkalimi i gabuar.')
+            if user.is_staff:
+                return redirect(request.GET.get('next', 'home'))
+            try:
+                _ = user.member
+                return redirect('member_dashboard')
+            except Exception:
+                return redirect('home')
+        messages.error(request, 'Nr. anëtarësie ose fjalëkalimi i gabuar.')
     return render(request, 'libra/login.html')
 
 

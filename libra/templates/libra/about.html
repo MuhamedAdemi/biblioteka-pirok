@@ -1,33 +1,73 @@
-{% extends 'main.html' %}
+{% extends 'base.html' %}
+{% block title %}Rreth Nesh – Biblioteka Pirok{% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-book-half display-3 text-dark mb-3 d-block"></i>
+        <h2 class="fw-bold">Biblioteka "Pirok"</h2>
+        <p class="text-muted lead">Biblioteka publike e fshatit Pirok</p>
+      </div>
+    </div>
 
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <i class="bi bi-geo-alt fs-2 text-primary mb-2"></i>
+          <h6 class="fw-bold">Adresa</h6>
+          <p class="text-muted small mb-0">Fshati Pirok<br>Kosovë</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <i class="bi bi-clock fs-2 text-success mb-2"></i>
+          <h6 class="fw-bold">Orari</h6>
+          <p class="text-muted small mb-0">E Hënë – E Premte<br>08:00 – 16:00</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <i class="bi bi-envelope fs-2 text-warning mb-2"></i>
+          <h6 class="fw-bold">Kontakti</h6>
+          <p class="text-muted small mb-0">biblioteka.pirok<br>@gmail.com</p>
+        </div>
+      </div>
+    </div>
 
-<h1>About</h1>
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-info-circle me-2"></i>Rreth Bibliotekës</div>
+      <div class="card-body">
+        <p>Biblioteka "Pirok" është institucion kulturor që u shërben banorëve të fshatit dhe zonës përreth.
+           Ofron një koleksion të gjerë librash në gjuhën shqipe dhe gjuhë të tjera.</p>
+        <p class="mb-0">Anëtarësimi është i hapur për të gjithë. Anëtarët mund të huazojnë libra
+           dhe t'i kthejnë brenda afatit të caktuar.</p>
+      </div>
+    </div>
 
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-people me-2"></i>Shërbimi për Anëtarët</div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Huazim librash deri 14 ditë</li>
+          <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Mundësi vazhdimi online (maks. 2 herë)</li>
+          <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Kërkim i lirë në katalog</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Regjistrim falas i anëtarësisë</li>
+        </ul>
+      </div>
+    </div>
 
-{% if numer > 10 %}
-<p>numri eshte me i madhe se 10</p>
-{% elif numer == 10 %}
-<p>numri eshte 10</p>
-{% else  %}
-<p>numri eshte me i vogel se 10</p>
-{% endif %} 
-<hr>
-<h1> Projektet </h1>
-
-<ul>
-    {% for project in projects %}
-        <li> Title:<a href = "{% url 'kursi' project.id %}"> {{project.title}}</a> --- {{project.description}}</li>
-    {% endfor %}
-</ul>
-
-
-
-{% endblock content %}
-
-
-
-
-
-
+    <div class="text-center mt-4">
+      <a href="{% url 'catalog' %}" class="btn btn-dark btn-lg me-2">
+        <i class="bi bi-search me-1"></i>Shiko Katalog
+      </a>
+      {% if not user.is_authenticated %}
+      <a href="{% url 'login' %}" class="btn btn-outline-dark btn-lg">
+        <i class="bi bi-box-arrow-in-right me-1"></i>Hyr si Anëtar
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
