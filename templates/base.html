@@ -90,7 +90,7 @@
       <div class="section-label">Librat</div>
       <ul class="nav flex-column mb-2">
         <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}" href="{% url 'catalog' %}"><i class="bi bi-grid me-2"></i>Katalog</a></li>
-        <li><a class="nav-link" href="{% url 'book_add' %}"><i class="bi bi-plus-circle me-2"></i>Shto Libër</a></li>
+        <li><a class="nav-link" href="{% url 'book_isbn_check' %}"><i class="bi bi-plus-circle me-2"></i>Shto Libër</a></li>
         <li><a class="nav-link {% if request.resolver_match.url_name == 'author_list' %}active{% endif %}" href="{% url 'author_list' %}"><i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
         <li><a class="nav-link {% if request.resolver_match.url_name == 'publisher_list' %}active{% endif %}" href="{% url 'publisher_list' %}"><i class="bi bi-building me-2"></i>Botuesit</a></li>
       </ul>

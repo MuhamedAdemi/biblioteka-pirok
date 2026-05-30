@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Kontrollo ISBN – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <h4 class="mb-4"><i class="bi bi-upc-scan me-2"></i>Regjistro Libër të Ri</h4>
+
+    <!-- ISBN Input -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold bg-dark text-white">
+        <i class="bi bi-search me-2"></i>Hapi 1 — Kontrollo ISBN
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Skano barkod ISBN-in ose shkruaje manualisht. Sistemi kontrollon nëse libri ekziston tashmë.
+        </p>
+        <form method="get" class="d-flex gap-2" id="isbnForm">
+          <input type="text" name="isbn" value="{{ isbn }}"
+                 class="form-control form-control-lg"
+                 placeholder="Skano ose shkruaj ISBN..."
+                 autofocus autocomplete="off"
+                 style="font-size:1.3rem; letter-spacing:.1rem; max-width:320px">
+          <button type="submit" class="btn btn-dark btn-lg px-4">
+            <i class="bi bi-search me-1"></i>Kontrollo
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Result: FOUND -->
+    {% if isbn and found %}
+    <div class="card border-warning mb-3">
+      <div class="card-header bg-warning text-dark fw-semibold">
+        <i class="bi bi-exclamation-triangle me-2"></i>Libri ekziston tashmë!
+      </div>
+      <div class="card-body">
+        <h5 class="mb-1">{{ found.title }}</h5>
+        {% if found.subtitle %}<p class="text-muted mb-1">{{ found.subtitle }}</p>{% endif %}
+        <p class="mb-1"><strong>ISBN:</strong> <code>{{ found.isbn }}</code></p>
+        <p class="mb-1"><strong>Autor:</strong> {{ found.primary_author|default:"-" }}</p>
+        <p class="mb-3"><strong>Kopjet:</strong>
+          <span class="badge badge-available">{{ found.available_copies }} të lira</span>
+          nga {{ found.total_copies }} gjithsej
+        </p>
+        <div class="d-flex gap-2">
+          <a href="{% url 'book_detail' found.pk %}" class="btn btn-primary">
+            <i class="bi bi-eye me-1"></i>Shiko Librin
+          </a>
+          <a href="{% url 'book_copy_add' found.pk %}" class="btn btn-outline-success">
+            <i class="bi bi-plus me-1"></i>Shto Kopje të Re
+          </a>
+          <a href="{% url 'book_add' %}?isbn={{ isbn }}" class="btn btn-outline-secondary btn-sm">
+            Regjistro edhe kështu (titull tjetër)
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result: NOT FOUND -->
+    {% elif isbn and not found %}
+    <div class="card border-success mb-3">
+      <div class="card-header bg-success text-white fw-semibold">
+        <i class="bi bi-check-circle me-2"></i>ISBN nuk ekziston — mund të regjistrosh!
+      </div>
+      <div class="card-body">
+        <p class="mb-3">
+          Libri me ISBN <code>{{ isbn }}</code> nuk është ende në katalog.
+        </p>
+        <a href="{% url 'book_add' %}?isbn={{ isbn }}" class="btn btn-success btn-lg">
+          <i class="bi bi-plus-circle me-2"></i>Vazhdo me Regjistrimin
+        </a>
+      </div>
+    </div>
+
+    {% elif isbn %}
+    <div class="alert alert-secondary">Kontrollo ISBN-in.</div>
+    {% endif %}
+
+    <!-- Skip ISBN -->
+    <div class="text-center mt-3">
+      <a href="{% url 'book_add' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-skip-forward me-1"></i>Vazhdo pa ISBN (libri nuk ka ISBN)
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Auto-submit kur skaneri lexon ISBN (Enter automatik)
+document.querySelector('input[name="isbn"]').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('isbnForm').submit();
+  }
+});
+</script>
+{% endblock %}

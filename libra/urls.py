@@ -21,6 +21,11 @@ urlpatterns = [
     # AJAX
     path('ajax/autor-shto/', views.author_add_ajax, name='author_add_ajax'),
     path('ajax/botues-shto/', views.publisher_add_ajax, name='publisher_add_ajax'),
+    path('ajax/autor-kerko/', views.author_search, name='author_search'),
+    path('ajax/botues-kerko/', views.publisher_search, name='publisher_search'),
+
+    # ISBN check (hapi i parë para regjistrimit)
+    path('librat/isbn/', views.book_isbn_check, name='book_isbn_check'),
 
     # Authors
     path('autore/', views.author_list, name='author_list'),

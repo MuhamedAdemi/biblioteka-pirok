@@ -157,6 +157,40 @@ def loan_renew(request, pk):
     return render(request, 'libra/loan_renew.html', {'loan': loan})
 
 
+# ── ISBN CHECK ────────────────────────────────────────────────────────────────
+
+@login_required
+def book_isbn_check(request):
+    isbn = request.GET.get('isbn', '').strip().replace('-', '').replace(' ', '')
+    found = None
+    if isbn:
+        found = Book.objects.filter(isbn__icontains=isbn).first()
+    return render(request, 'libra/book_isbn_check.html', {
+        'isbn': isbn,
+        'found': found,
+    })
+
+
+# ── AUTHOR SEARCH (AJAX autocomplete) ────────────────────────────────────────
+
+@login_required
+def author_search(request):
+    q = request.GET.get('q', '').strip()
+    authors = Author.objects.filter(
+        Q(last_name__icontains=q) | Q(first_name__icontains=q)
+    )[:10]
+    data = [{'id': a.pk, 'text': str(a)} for a in authors]
+    return JsonResponse({'results': data})
+
+
+@login_required
+def publisher_search(request):
+    q = request.GET.get('q', '').strip()
+    pubs = Publisher.objects.filter(name__icontains=q)[:10]
+    data = [{'id': p.pk, 'text': str(p)} for p in pubs]
+    return JsonResponse({'results': data})
+
+
 # ── BOOK MANAGEMENT ───────────────────────────────────────────────────────────
 
 @login_required
@@ -171,7 +205,8 @@ def book_add(request):
             messages.success(request, f'Libri "{book.title}" u shtua. Shto kopjet fizike më poshtë.')
             return redirect('book_copy_list', pk=book.pk)
     else:
-        form = BookForm()
+        isbn_initial = request.GET.get('isbn', '')
+        form = BookForm(initial={'isbn': isbn_initial})
         formset = BookAuthorFormSet()
     return render(request, 'libra/book_form.html', {
         'form': form, 'formset': formset, 'action': 'Shto Libër'
