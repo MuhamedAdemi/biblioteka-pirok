@@ -91,10 +91,10 @@ def contact(request):
                     fail_silently=False,
                 )
                 messages.success(request, f'Faleminderit {name}! Mesazhi juaj u dërgua. Do t\'ju kontaktojmë së shpejti.')
-            except Exception as e:
+            except Exception:
                 messages.warning(
                     request,
-                    f'Gabim teknik: {e}'
+                    'Mesazhi nuk u dërgua. Ju lutem na kontaktoni drejtpërdrejt: pirokbiblioteka@gmail.com'
                 )
         else:
             messages.error(request, 'Ju lutem plotësoni të gjitha fushat e detyrueshme.')
