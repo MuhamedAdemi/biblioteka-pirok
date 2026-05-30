@@ -67,4 +67,5 @@ urlpatterns = [
     # Auth
     path('hyrje/', views.login_view, name='login'),
     path('dalje/', views.logout_view, name='logout'),
+    path('ndrysho-fjalekalimin/', views.change_password, name='change_password'),
 ]

@@ -651,3 +651,19 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('home')
+
+
+@login_required
+def change_password(request):
+    from django.contrib.auth.forms import PasswordChangeForm
+    from django.contrib.auth import update_session_auth_hash
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Fjalëkalimi u ndryshua me sukses!')
+            return redirect('member_dashboard' if not request.user.is_staff else 'home')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'libra/change_password.html', {'form': form})
