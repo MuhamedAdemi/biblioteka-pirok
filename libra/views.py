@@ -287,8 +287,13 @@ def book_copy_delete(request, copy_pk):
 
 @login_required
 def author_list(request):
+    q = request.GET.get('q', '').strip()
     authors = Author.objects.all()
-    return render(request, 'libra/author_list.html', {'authors': authors})
+    if q:
+        authors = authors.filter(
+            Q(last_name__icontains=q) | Q(first_name__icontains=q)
+        )
+    return render(request, 'libra/author_list.html', {'authors': authors, 'q': q})
 
 
 @login_required
@@ -322,8 +327,13 @@ def author_edit(request, pk):
 
 @login_required
 def publisher_list(request):
+    q = request.GET.get('q', '').strip()
     publishers = Publisher.objects.all()
-    return render(request, 'libra/publisher_list.html', {'publishers': publishers})
+    if q:
+        publishers = publishers.filter(
+            Q(name__icontains=q) | Q(city__icontains=q)
+        )
+    return render(request, 'libra/publisher_list.html', {'publishers': publishers, 'q': q})
 
 
 @login_required

@@ -6,6 +6,22 @@
   <h4 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Autorët</h4>
   <a href="{% url 'author_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Shto Autor</a>
 </div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ q }}" class="form-control"
+             placeholder="Kërko me mbiemër ose emër..." autofocus>
+      <button type="submit" class="btn btn-dark"><i class="bi bi-search"></i></button>
+      {% if q %}<a href="{% url 'author_list' %}" class="btn btn-outline-secondary">Pastro</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+{% if q %}
+<p class="text-muted small mb-2">{{ authors|length }} rezultat{% if authors|length != 1 %}e{% endif %} për "<strong>{{ q }}</strong>"</p>
+{% endif %}
+
 <div class="card">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -13,8 +29,8 @@
       <tbody>
         {% for a in authors %}
         <tr>
-          <td>{{ a.last_name }}</td>
-          <td>{{ a.first_name }}</td>
+          <td class="fw-semibold">{{ a.last_name }}</td>
+          <td>{{ a.first_name|default:"-" }}</td>
           <td>
             <a href="{% url 'author_edit' a.pk %}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-pencil"></i>
@@ -22,7 +38,9 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="3" class="text-center text-muted py-4">Asnjë autor.</td></tr>
+        <tr><td colspan="3" class="text-center text-muted py-4">
+          {% if q %}Asnjë autor nuk u gjet për "{{ q }}".{% else %}Asnjë autor.{% endif %}
+        </td></tr>
         {% endfor %}
       </tbody>
     </table>

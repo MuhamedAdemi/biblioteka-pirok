@@ -6,6 +6,22 @@
   <h4 class="mb-0"><i class="bi bi-building me-2"></i>Botuesit</h4>
   <a href="{% url 'publisher_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Shto Botues</a>
 </div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ q }}" class="form-control"
+             placeholder="Kërko me emër ose qytet..." autofocus>
+      <button type="submit" class="btn btn-dark"><i class="bi bi-search"></i></button>
+      {% if q %}<a href="{% url 'publisher_list' %}" class="btn btn-outline-secondary">Pastro</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+{% if q %}
+<p class="text-muted small mb-2">{{ publishers|length }} rezultat{% if publishers|length != 1 %}e{% endif %} për "<strong>{{ q }}</strong>"</p>
+{% endif %}
+
 <div class="card">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -13,12 +29,14 @@
       <tbody>
         {% for p in publishers %}
         <tr>
-          <td>{{ p.name }}</td>
+          <td class="fw-semibold">{{ p.name }}</td>
           <td>{{ p.city|default:"-" }}</td>
           <td>{{ p.country|default:"-" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="3" class="text-center text-muted py-4">Asnjë botues.</td></tr>
+        <tr><td colspan="3" class="text-center text-muted py-4">
+          {% if q %}Asnjë botues nuk u gjet për "{{ q }}".{% else %}Asnjë botues.{% endif %}
+        </td></tr>
         {% endfor %}
       </tbody>
     </table>
