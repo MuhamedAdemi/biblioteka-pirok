@@ -229,7 +229,9 @@ def book_copy_add(request, pk):
             messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
             return redirect('book_copy_list', pk=pk)
     else:
-        form = BookCopyForm(initial={'copy_number': BookCopy.next_copy_number()})
+        form = BookCopyForm(initial={
+            'copy_number': BookCopy.next_copy_number(language=book.language)
+        })
     return render(request, 'libra/book_copy_form.html', {'form': form, 'book': book})
 
 
@@ -392,6 +394,32 @@ def member_create_account(request, pk):
 
 
 # ── LOANS ─────────────────────────────────────────────────────────────────────
+
+from django.http import JsonResponse
+
+@login_required
+def author_add_ajax(request):
+    if request.method == 'POST':
+        last_name = request.POST.get('last_name', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        if last_name:
+            author = Author.objects.create(last_name=last_name, first_name=first_name)
+            return JsonResponse({'id': author.pk, 'text': str(author)})
+        return JsonResponse({'error': 'Mbiemri është i detyrueshëm'}, status=400)
+    return JsonResponse({'error': 'Metodë e gabuar'}, status=405)
+
+
+@login_required
+def publisher_add_ajax(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        city = request.POST.get('city', '').strip()
+        if name:
+            pub = Publisher.objects.create(name=name, city=city)
+            return JsonResponse({'id': pub.pk, 'text': str(pub)})
+        return JsonResponse({'error': 'Emri është i detyrueshëm'}, status=400)
+    return JsonResponse({'error': 'Metodë e gabuar'}, status=405)
+
 
 def _mark_overdue():
     today = timezone.now().date()

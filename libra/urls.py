@@ -18,6 +18,10 @@ urlpatterns = [
     path('librat/<uuid:pk>/kopje/shto/', views.book_copy_add, name='book_copy_add'),
     path('kopje/<int:copy_pk>/fshi/', views.book_copy_delete, name='book_copy_delete'),
 
+    # AJAX
+    path('ajax/autor-shto/', views.author_add_ajax, name='author_add_ajax'),
+    path('ajax/botues-shto/', views.publisher_add_ajax, name='publisher_add_ajax'),
+
     # Authors
     path('autore/', views.author_list, name='author_list'),
     path('autore/shto/', views.author_add, name='author_add'),

@@ -12,9 +12,8 @@
 
 <h4 class="mb-4"><i class="bi bi-book me-2"></i>{{ action }}</h4>
 
-<form method="post">
+<form method="post" id="bookForm">
   {% csrf_token %}
-
   <div class="row">
     <div class="col-lg-8">
 
@@ -32,6 +31,11 @@
             {{ form.subtitle }}
           </div>
           <div class="col-md-6">
+            <label class="form-label">{{ form.language.label }} <span class="text-danger">*</span></label>
+            {{ form.language }}
+            <small class="text-muted">Gjuha përcakton prefiksin e barkodit (101/201/301/501)</small>
+          </div>
+          <div class="col-md-6">
             <label class="form-label">{{ form.isbn.label }}</label>
             {{ form.isbn }}
           </div>
@@ -46,10 +50,17 @@
       <div class="card mb-3">
         <div class="card-header fw-semibold">Publikimi</div>
         <div class="card-body row g-3">
+
+          <!-- Publisher with modal -->
           <div class="col-md-8">
             <label class="form-label">{{ form.publisher.label }}</label>
-            {{ form.publisher }}
-            <a href="{% url 'publisher_add' %}" target="_blank" class="small text-muted">+ Shto botues të ri</a>
+            <div class="input-group">
+              {{ form.publisher }}
+              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                      data-bs-target="#modalBotues" title="Shto botues të ri">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ form.year.label }}</label>
@@ -63,18 +74,17 @@
             <label class="form-label">{{ form.pages.label }}</label>
             {{ form.pages }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label">{{ form.quantity.label }}</label>
-            {{ form.quantity }}
-          </div>
         </div>
       </div>
 
       <!-- Authors formset -->
       <div class="card mb-3">
-        <div class="card-header fw-semibold d-flex justify-content-between">
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
           Autorët
-          <a href="{% url 'author_add' %}" target="_blank" class="small text-muted">+ Shto autor të ri</a>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#modalAutor">
+            <i class="bi bi-plus-lg me-1"></i>Autor i Ri
+          </button>
         </div>
         <div class="card-body">
           {{ formset.management_form }}
@@ -126,7 +136,6 @@
     </div>
 
     <div class="col-lg-4">
-      <!-- Subjects -->
       <div class="card mb-3">
         <div class="card-header fw-semibold">Kategoritë / Lëndët</div>
         <div class="card-body">
@@ -134,8 +143,6 @@
           <small class="text-muted d-block mt-1">Mbaj Ctrl/Cmd për shumë zgjedhje</small>
         </div>
       </div>
-
-      <!-- Submit -->
       <div class="card">
         <div class="card-body d-grid gap-2">
           <button type="submit" class="btn btn-primary">
@@ -151,4 +158,118 @@
     </div>
   </div>
 </form>
+
+<!-- ── MODAL: AUTOR I RI ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modalAutor" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-person-plus me-2"></i>Shto Autor të Ri</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Mbiemri <span class="text-danger">*</span></label>
+          <input type="text" id="autorMbiemri" class="form-control" placeholder="Mbiemri">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Emri</label>
+          <input type="text" id="autorEmri" class="form-control" placeholder="Emri">
+        </div>
+        <div id="autorGabim" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anulo</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnShtojAutor">
+          <i class="bi bi-check me-1"></i>Shto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: BOTUES I RI ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modalBotues" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-building-plus me-2"></i>Shto Botues të Ri</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Emri <span class="text-danger">*</span></label>
+          <input type="text" id="botuesEmri" class="form-control" placeholder="Emri i botuesit">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Qyteti</label>
+          <input type="text" id="botuesQyteti" class="form-control" placeholder="Qyteti">
+        </div>
+        <div id="botuesGabim" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anulo</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnShtojBotues">
+          <i class="bi bi-check me-1"></i>Shto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const csrf = '{{ csrf_token }}';
+
+// ── Shto Autor
+document.getElementById('btnShtojAutor').addEventListener('click', function() {
+  const mbiemri = document.getElementById('autorMbiemri').value.trim();
+  const emri = document.getElementById('autorEmri').value.trim();
+  const gabim = document.getElementById('autorGabim');
+  if (!mbiemri) { gabim.textContent = 'Mbiemri është i detyrueshëm.'; gabim.classList.remove('d-none'); return; }
+  gabim.classList.add('d-none');
+
+  fetch('{% url "author_add_ajax" %}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `last_name=${encodeURIComponent(mbiemri)}&first_name=${encodeURIComponent(emri)}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { gabim.textContent = data.error; gabim.classList.remove('d-none'); return; }
+    // Shto opsionin te çdo select autori në formset
+    document.querySelectorAll('select[name$="-author"]').forEach(sel => {
+      const opt = new Option(data.text, data.id);
+      sel.add(opt);
+    });
+    document.getElementById('autorMbiemri').value = '';
+    document.getElementById('autorEmri').value = '';
+    bootstrap.Modal.getInstance(document.getElementById('modalAutor')).hide();
+  });
+});
+
+// ── Shto Botues
+document.getElementById('btnShtojBotues').addEventListener('click', function() {
+  const emri = document.getElementById('botuesEmri').value.trim();
+  const qyteti = document.getElementById('botuesQyteti').value.trim();
+  const gabim = document.getElementById('botuesGabim');
+  if (!emri) { gabim.textContent = 'Emri është i detyrueshëm.'; gabim.classList.remove('d-none'); return; }
+  gabim.classList.add('d-none');
+
+  fetch('{% url "publisher_add_ajax" %}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `name=${encodeURIComponent(emri)}&city=${encodeURIComponent(qyteti)}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { gabim.textContent = data.error; gabim.classList.remove('d-none'); return; }
+    const sel = document.getElementById('{{ form.publisher.id_for_label }}');
+    const opt = new Option(data.text, data.id, true, true);
+    sel.add(opt);
+    document.getElementById('botuesEmri').value = '';
+    document.getElementById('botuesQyteti').value = '';
+    bootstrap.Modal.getInstance(document.getElementById('modalBotues')).hide();
+  });
+});
+</script>
 {% endblock %}

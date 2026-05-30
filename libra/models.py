@@ -41,9 +41,25 @@ class Subject(models.Model):
 
 
 class Book(models.Model):
+    LANGUAGE_CHOICES = [
+        ('sq', 'Shqip'),
+        ('en', 'Anglisht'),
+        ('mk', 'Maqedonisht'),
+        ('other', 'Gjuhë tjera'),
+    ]
+    LANGUAGE_PREFIX = {
+        'sq': '101',
+        'en': '201',
+        'mk': '301',
+        'other': '501',
+    }
+
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
     title = models.CharField(max_length=500, verbose_name="Titulli")
     subtitle = models.CharField(max_length=500, blank=True, verbose_name="Nëntitulli")
+    language = models.CharField(
+        max_length=10, choices=LANGUAGE_CHOICES, default='sq', verbose_name="Gjuha"
+    )
     isbn = models.CharField(max_length=20, blank=True, verbose_name="ISBN")
     publisher = models.ForeignKey(
         Publisher, null=True, blank=True, on_delete=models.SET_NULL,
@@ -101,7 +117,7 @@ class BookAuthor(models.Model):
 
 class BookCopy(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='copies', verbose_name="Libri")
-    copy_number = models.CharField(max_length=8, unique=True, verbose_name="Nr. Kopjes (Barkod)")
+    copy_number = models.CharField(max_length=14, unique=True, verbose_name="Nr. Kopjes (Barkod)")
     notes = models.CharField(max_length=200, blank=True, verbose_name="Shënime")
 
     class Meta:
@@ -116,14 +132,19 @@ class BookCopy(models.Model):
         return not self.loan_set.filter(status__in=['active', 'overdue']).exists()
 
     @classmethod
-    def next_copy_number(cls):
-        last = cls.objects.order_by('-copy_number').first()
+    def next_copy_number(cls, language='sq'):
+        prefix = Book.LANGUAGE_PREFIX.get(language, '501')
+        last = cls.objects.filter(
+            copy_number__startswith=f'{prefix}-'
+        ).order_by('-copy_number').first()
         if last:
             try:
-                return str(int(last.copy_number) + 1).zfill(4)
-            except ValueError:
-                pass
-        return '0001'
+                num = int(last.copy_number.split('-')[1]) + 1
+            except (ValueError, IndexError):
+                num = 1
+        else:
+            num = 1
+        return f"{prefix}-{str(num).zfill(6)}"
 
 
 class Member(models.Model):

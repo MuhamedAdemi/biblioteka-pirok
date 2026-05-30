@@ -30,13 +30,14 @@ class BookForm(forms.ModelForm):
     class Meta:
         model = Book
         fields = [
-            'title', 'subtitle', 'isbn', 'publisher', 'year',
+            'title', 'subtitle', 'language', 'isbn', 'publisher', 'year',
             'format', 'pages', 'class_number',
             'general_note', 'contents_note', 'summary', 'subjects',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'subtitle': forms.TextInput(attrs={'class': 'form-control'}),
+            'language': forms.Select(attrs={'class': 'form-select'}),
             'isbn': forms.TextInput(attrs={'class': 'form-control'}),
             'publisher': forms.Select(attrs={'class': 'form-select'}),
             'year': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'p.sh. 1999'}),

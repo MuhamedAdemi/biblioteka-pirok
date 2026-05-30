@@ -143,5 +143,37 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- FOOTER -->
+{% load static %}
+<footer class="bg-dark text-white mt-5 py-4">
+  <div class="container">
+    <div class="row align-items-center g-3">
+      <div class="col-md-4 text-center text-md-start">
+        <i class="bi bi-book-half me-2 text-warning"></i>
+        <strong>Biblioteka Pirok</strong><br>
+        <small class="text-muted">Fshati Pirok, Tetovë, Maqedonia e Veriut</small><br>
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>E Hënë – E Premte, 08:00–16:00</small>
+      </div>
+      <div class="col-md-4 text-center">
+        <small class="text-muted d-block mb-2">Zhvilluar nga</small>
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <img src="{% static 'libra/img/wisdom-house.png' %}" alt="Wisdom House"
+               style="height:45px; object-fit:contain; background:white; border-radius:6px; padding:3px">
+          <img src="{% static 'libra/img/data-consulting.png' %}" alt="Data Consulting"
+               style="height:45px; object-fit:contain; background:white; border-radius:6px; padding:3px">
+        </div>
+        <small class="text-muted d-block mt-2">Muhamed Ademi &mdash; Wisdom House &amp; Data Consulting</small>
+      </div>
+      <div class="col-md-4 text-center text-md-end">
+        <small class="text-muted">
+          <i class="bi bi-envelope me-1"></i>wisdomhouse28@gmail.com<br>
+          <i class="bi bi-c-circle me-1"></i>{{ "now"|date:"Y" }} Biblioteka Pirok
+        </small>
+      </div>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
