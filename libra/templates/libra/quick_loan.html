@@ -58,4 +58,18 @@
     </div>
   </div>
 </div>
+
+<script>
+const memberField = document.querySelector('input[name="member_number"]');
+const copyField   = document.querySelector('input[name="copy_number"]');
+const form        = document.querySelector('form');
+
+memberField.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); if (this.value.trim()) copyField.focus(); }
+});
+copyField.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); if (this.value.trim() && memberField.value.trim()) form.submit(); }
+});
+memberField.focus();
+</script>
 {% endblock %}
