@@ -52,6 +52,9 @@ urlpatterns = [
     # Member dashboard
     path('dashboard/', views.member_dashboard, name='member_dashboard'),
 
+    # Contact
+    path('kontakt/', views.contact, name='contact'),
+
     # Auth
     path('hyrje/', views.login_view, name='login'),
     path('dalje/', views.logout_view, name='logout'),

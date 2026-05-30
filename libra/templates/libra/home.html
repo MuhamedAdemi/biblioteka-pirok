@@ -1,87 +1,298 @@
 {% extends 'base.html' %}
-{% block title %}Kryefaqja – Biblioteka Pirok{% endblock %}
+{% load static %}
+{% block title %}Biblioteka Pirok – Faqja Kryesore{% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card border-primary p-3">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-book fs-2 text-primary me-3"></i>
-        <div>
-          <div class="fs-3 fw-bold">{{ total_books }}</div>
-          <div class="text-muted small">Libra Gjithsej</div>
+
+<!-- ── HERO CAROUSEL ─────────────────────────────────────────────────── -->
+<div class="container-fluid px-0 mb-0" style="margin-top:-1.5rem">
+  <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
+    <div class="carousel-inner">
+
+      <div class="carousel-item active">
+        <img src="{% static 'libra/img/lib1.jpeg' %}" class="d-block w-100" alt="Biblioteka Pirok"
+             style="height:500px; object-fit:cover; filter:brightness(.55)">
+      </div>
+      <div class="carousel-item">
+        <img src="{% static 'libra/img/lib4.jpeg' %}" class="d-block w-100" alt="Biblioteka Pirok"
+             style="height:500px; object-fit:cover; filter:brightness(.55)">
+      </div>
+      <div class="carousel-item">
+        <img src="{% static 'libra/img/lib3.jpeg' %}" class="d-block w-100" alt="Biblioteka Pirok"
+             style="height:500px; object-fit:cover; filter:brightness(.55)">
+      </div>
+
+      <!-- Text overlay on all slides -->
+      <div class="position-absolute top-50 start-50 translate-middle text-center text-white w-100 px-3"
+           style="z-index:10; pointer-events:none">
+        <h1 class="display-4 fw-bold mb-2" style="text-shadow:0 2px 8px rgba(0,0,0,.7)">
+          Biblioteka <span style="color:#f8c94b">Pirok</span>
+        </h1>
+        <p class="lead mb-4" style="text-shadow:0 1px 4px rgba(0,0,0,.8); font-size:1.2rem">
+          Qendra kulturore e fshatit Pirok &mdash; Kosovë
+        </p>
+        <div style="pointer-events:all">
+          <a href="{% url 'catalog' %}" class="btn btn-warning btn-lg me-2 px-4 fw-semibold">
+            <i class="bi bi-search me-2"></i>Shfleto Librat
+          </a>
+          <a href="#anetarsimi" class="btn btn-outline-light btn-lg px-4">
+            <i class="bi bi-person-plus me-2"></i>Bëhu Anëtar
+          </a>
         </div>
       </div>
     </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card border-success p-3">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-people fs-2 text-success me-3"></i>
-        <div>
-          <div class="fs-3 fw-bold">{{ total_members }}</div>
-          <div class="text-muted small">Anëtarë Aktivë</div>
-        </div>
+</div>
+
+<!-- ── STATS ──────────────────────────────────────────────────────────── -->
+<div class="bg-dark text-white py-3 mb-4">
+  <div class="container">
+    <div class="row text-center g-0">
+      <div class="col-4 border-end border-secondary">
+        <div class="fs-2 fw-bold text-warning">{{ total_books }}</div>
+        <div class="small text-light opacity-75"><i class="bi bi-book me-1"></i>Libra</div>
       </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card border-warning p-3">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-arrow-left-right fs-2 text-warning me-3"></i>
-        <div>
-          <div class="fs-3 fw-bold">{{ active_loans }}</div>
-          <div class="text-muted small">Huazime Aktive</div>
-        </div>
+      <div class="col-4 border-end border-secondary">
+        <div class="fs-2 fw-bold text-warning">{{ total_members }}</div>
+        <div class="small text-light opacity-75"><i class="bi bi-people me-1"></i>Anëtarë</div>
       </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card border-info p-3">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-search fs-2 text-info me-3"></i>
-        <div>
-          <a href="{% url 'catalog' %}" class="btn btn-info btn-sm text-white mt-1">Shiko Katalog</a>
-        </div>
+      <div class="col-4">
+        <div class="fs-2 fw-bold text-warning">{{ active_loans }}</div>
+        <div class="small text-light opacity-75"><i class="bi bi-arrow-left-right me-1"></i>Huazime Aktive</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Librat e Fundit të Shtuar</h5>
-    {% if user.is_authenticated %}
-    <a href="{% url 'book_add' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus me-1"></i>Shto Libër</a>
-    {% endif %}
+<div class="container">
+
+<!-- ── SERVICES ───────────────────────────────────────────────────────── -->
+<div class="row g-3 mb-5">
+  <div class="col-12 text-center mb-2">
+    <h3 class="fw-bold">Çfarë mund të bëni?</h3>
+    <p class="text-muted">Biblioteka Pirok ofron shërbime për të gjithë</p>
   </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Titulli</th>
-            <th>Autori Kryesor</th>
-            <th>Botuesi</th>
-            <th>Viti</th>
-            <th>ISBN</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for book in recent_books %}
-          <tr>
-            <td><a href="{% url 'book_detail' book.pk %}" class="text-decoration-none fw-semibold">{{ book.title }}</a></td>
-            <td>{{ book.primary_author|default:"-" }}</td>
-            <td>{{ book.publisher|default:"-" }}</td>
-            <td>{{ book.year|default:"-" }}</td>
-            <td><small class="text-muted">{{ book.isbn|default:"-" }}</small></td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="5" class="text-center text-muted py-4">Ende nuk ka libra të regjistruar.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+  <!-- Visitors -->
+  <div class="col-md-4">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body text-center p-4">
+        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:70px;height:70px">
+          <i class="bi bi-eye fs-2 text-secondary"></i>
+        </div>
+        <h5 class="fw-bold">Vizitorët</h5>
+        <p class="text-muted small">Edhe pa llogari mund të shfleto katalogun e plotë të librave dhe të mësoni rreth bibliotekës.</p>
+        <ul class="list-unstyled text-start small">
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Shfleto katalogun</li>
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Kërko libra sipas autorit/ISBN</li>
+          <li><i class="bi bi-check text-success me-2"></i>Shih informacionin e bibliotekës</li>
+        </ul>
+        <a href="{% url 'catalog' %}" class="btn btn-outline-secondary btn-sm mt-2">
+          <i class="bi bi-search me-1"></i>Shko te Katalog
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Members -->
+  <div class="col-md-4">
+    <div class="card h-100 border-0 shadow-sm border-top border-4 border-warning">
+      <div class="card-body text-center p-4">
+        <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:70px;height:70px">
+          <i class="bi bi-person-check fs-2 text-warning"></i>
+        </div>
+        <h5 class="fw-bold">Anëtarët</h5>
+        <p class="text-muted small">Si anëtar i bibliotekës keni akses të plotë në shërbime dhe mund të huazoni libra.</p>
+        <ul class="list-unstyled text-start small">
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Huazo libra deri 14 ditë</li>
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Vazhdo afatin online (2×)</li>
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Shih historinë e huazimeve</li>
+          <li><i class="bi bi-check text-success me-2"></i>Rezervo libra me email</li>
+        </ul>
+        <a href="{% url 'login' %}" class="btn btn-warning btn-sm mt-2">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Hyr si Anëtar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff -->
+  <div class="col-md-4">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body text-center p-4">
+        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:70px;height:70px">
+          <i class="bi bi-shield-check fs-2 text-primary"></i>
+        </div>
+        <h5 class="fw-bold">Stafi</h5>
+        <p class="text-muted small">Punonjësit e bibliotekës menaxhojnë koleksionin, anëtarët dhe huazimet.</p>
+        <ul class="list-unstyled text-start small">
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Regjistro libra & kopje</li>
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Menaxho anëtarët</li>
+          <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Kthim & huazim i shpejtë</li>
+          <li><i class="bi bi-check text-success me-2"></i>Raporto huazimet vonuara</li>
+        </ul>
+        <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm mt-2">
+          <i class="bi bi-lock me-1"></i>Hyrja e Stafit
+        </a>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- ── RECENT BOOKS ────────────────────────────────────────────────────── -->
+{% if recent_books %}
+<div class="mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-warning"></i>Librat e Fundit të Shtuar</h4>
+    <a href="{% url 'catalog' %}" class="btn btn-outline-dark btn-sm">Shiko të gjithë</a>
+  </div>
+  <div class="table-responsive card shadow-sm">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>Titulli</th><th>Autori</th><th>Botuesi</th><th>Viti</th></tr>
+      </thead>
+      <tbody>
+        {% for book in recent_books %}
+        <tr>
+          <td><a href="{% url 'book_detail' book.pk %}" class="text-decoration-none fw-semibold">{{ book.title }}</a></td>
+          <td>{{ book.primary_author|default:"-" }}</td>
+          <td>{{ book.publisher|default:"-" }}</td>
+          <td><small class="text-muted">{{ book.year|default:"-" }}</small></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── MEMBERSHIP ─────────────────────────────────────────────────────── -->
+<div id="anetarsimi" class="row g-4 mb-5">
+  <div class="col-12 text-center mb-1">
+    <h3 class="fw-bold">Bëhu Anëtar i Bibliotekës</h3>
+    <p class="text-muted">Anëtarësimi është i thjeshtë dhe i përballueshëm</p>
+  </div>
+  <div class="col-md-5 offset-md-1">
+    <div class="card border-0 shadow text-center p-4 h-100">
+      <div class="card-body">
+        <div class="display-4 fw-bold text-warning mb-1">150</div>
+        <div class="fs-5 text-muted mb-3">Denarë / Muaj</div>
+        <p class="text-muted small mb-4">
+          Çmim simbolik që ndihmon në mirëmbajtjen dhe zgjerimin e koleksionit të bibliotekës.
+        </p>
+        <ul class="list-unstyled text-start mb-4">
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Huazim i pakufizuar librash</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Akses në sistemin online</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Vazhdim huazimi nga shtëpia</li>
+          <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Njoftime për libra të rinj</li>
+        </ul>
+        <a href="#kontakt" class="btn btn-warning btn-lg w-100 fw-semibold">
+          <i class="bi bi-person-plus me-2"></i>Kontaktoni Stafin
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card border-0 shadow p-4 h-100 bg-light">
+      <h5 class="fw-bold mb-3"><i class="bi bi-info-circle text-warning me-2"></i>Si bëheni anëtar?</h5>
+      <ol class="text-muted">
+        <li class="mb-2">Vizitoni bibliotekën ose dërgoni email</li>
+        <li class="mb-2">Stafi regjistron të dhënat tuaja</li>
+        <li class="mb-2">Merrni numrin tuaj të anëtarësisë</li>
+        <li class="mb-2">Krijoni llogarinë tuaj online</li>
+        <li>Filloni të huazoni libra!</li>
+      </ol>
+      <hr>
+      <div class="small text-muted">
+        <i class="bi bi-clock me-1"></i><strong>Orari:</strong> E Hënë – E Premte, 08:00–16:00<br>
+        <i class="bi bi-geo-alt me-1"></i><strong>Adresa:</strong> Fshati Pirok, Tetovë, MK
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GALLERY ─────────────────────────────────────────────────────────── -->
+<div class="mb-5">
+  <h4 class="fw-bold text-center mb-3">Biblioteka Jonë</h4>
+  <div class="row g-2">
+    <div class="col-6 col-md-3">
+      <img src="{% static 'libra/img/lib1.jpeg' %}" class="img-fluid rounded shadow-sm w-100"
+           style="height:180px; object-fit:cover" alt="Biblioteka Pirok">
+    </div>
+    <div class="col-6 col-md-3">
+      <img src="{% static 'libra/img/lib2.jpeg' %}" class="img-fluid rounded shadow-sm w-100"
+           style="height:180px; object-fit:cover" alt="Biblioteka Pirok">
+    </div>
+    <div class="col-6 col-md-3">
+      <img src="{% static 'libra/img/lib3.jpeg' %}" class="img-fluid rounded shadow-sm w-100"
+           style="height:180px; object-fit:cover" alt="Biblioteka Pirok">
+    </div>
+    <div class="col-6 col-md-3">
+      <img src="{% static 'libra/img/lib4.jpeg' %}" class="img-fluid rounded shadow-sm w-100"
+           style="height:180px; object-fit:cover" alt="Biblioteka Pirok">
+    </div>
+  </div>
+</div>
+
+<!-- ── CONTACT FORM ───────────────────────────────────────────────────── -->
+<div id="kontakt" class="row justify-content-center mb-5">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow">
+      <div class="card-header bg-dark text-white text-center py-3">
+        <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Na Kontaktoni</h5>
+        <small class="opacity-75">Rezervim libri, informacion anëtarësie, ose çdo pyetje tjetër</small>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" action="{% url 'contact' %}">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Emri & Mbiemri <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" placeholder="Emri juaj" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+              <input type="email" name="email" class="form-control" placeholder="email@juaj.com" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Tema</label>
+              <select name="subject" class="form-select">
+                <option value="Anëtarësim">Anëtarësim</option>
+                <option value="Rezervim libri">Rezervim libri</option>
+                <option value="Pyetje të përgjithshme">Pyetje të përgjithshme</option>
+                <option value="Tjetër">Tjetër</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Mesazhi <span class="text-danger">*</span></label>
+              <textarea name="message" class="form-control" rows="4"
+                        placeholder="Shkruani mesazhin tuaj këtu..." required></textarea>
+            </div>
+            <div class="col-12 text-end">
+              <button type="submit" class="btn btn-dark btn-lg px-5">
+                <i class="bi bi-send me-2"></i>Dërgo Mesazhin
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<style>
+.carousel-item img { transition: filter .3s ease; }
+</style>
 {% endblock %}

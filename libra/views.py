@@ -71,6 +71,37 @@ def about(request):
     return render(request, 'libra/about.html')
 
 
+def contact(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        subject = request.POST.get('subject', 'Kontakt')
+        message = request.POST.get('message', '').strip()
+        if name and email and message:
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                full_subject = f'[Biblioteka Pirok] {subject} – nga {name}'
+                body = f'Emri: {name}\nEmail: {email}\nTema: {subject}\n\n{message}'
+                send_mail(
+                    subject=full_subject,
+                    message=body,
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'biblioteka.pirok@gmail.com'),
+                    recipient_list=[getattr(settings, 'CONTACT_EMAIL', 'biblioteka.pirok@gmail.com')],
+                    fail_silently=False,
+                )
+                messages.success(request, f'Faleminderit {name}! Mesazhi juaj u dërgua. Do t\'ju kontaktojmë së shpejti.')
+            except Exception:
+                messages.warning(
+                    request,
+                    'Mesazhi nuk u dërgua (email nuk është konfiguruar ende). '
+                    'Na kontaktoni drejtpërdrejt: biblioteka.pirok@gmail.com'
+                )
+        else:
+            messages.error(request, 'Ju lutem plotësoni të gjitha fushat e detyrueshme.')
+    return redirect('home')
+
+
 # ── MEMBER DASHBOARD ──────────────────────────────────────────────────────────
 
 def member_dashboard(request):
