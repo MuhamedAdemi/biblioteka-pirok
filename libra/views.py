@@ -392,10 +392,11 @@ def member_add(request):
         next_num = 1
         if last:
             try:
-                next_num = int(last.membership_number) + 1
-            except ValueError:
+                parts = last.membership_number.split('-')
+                next_num = int(parts[-1]) + 1
+            except (ValueError, IndexError):
                 next_num = Member.objects.count() + 1
-        form = MemberForm(initial={'membership_number': str(next_num).zfill(4)})
+        form = MemberForm(initial={'membership_number': f'10-{str(next_num).zfill(4)}'})
     return render(request, 'libra/member_form.html', {'form': form, 'action': 'Regjistro Anëtar'})
 
 

@@ -99,7 +99,7 @@
             {% endif %}
 
             <tr>
-              <th class="text-muted">Kopjet e Disponueshme</th>
+              <th class="text-muted">Kopjet</th>
               <td>
                 {% with avail=book.available_copies total=book.total_copies %}
                 {% if avail > 0 %}
@@ -109,12 +109,50 @@
                 {% endif %}
                 {% if user.is_staff %}
                 <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-sm btn-outline-secondary ms-2">
-                  <i class="bi bi-upc me-1"></i>Menaxho Kopjet
+                  <i class="bi bi-upc me-1"></i>Menaxho
                 </a>
                 {% endif %}
                 {% endwith %}
               </td>
             </tr>
+
+            {% if copies %}
+            <tr>
+              <th class="text-muted align-top pt-2">ID Kopjeve</th>
+              <td>
+                <table class="table table-sm table-bordered mb-0 mt-1" style="font-size:.85rem">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Barkod (ID)</th>
+                      <th>Label Rafti</th>
+                      <th>Statusi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for copy in copies %}
+                    <tr>
+                      <td><code class="fw-bold">{{ copy.copy_number }}</code></td>
+                      <td>
+                        {% if copy.shelf_label %}
+                          <code>{{ copy.shelf_label }}</code>
+                        {% else %}
+                          <span class="text-muted small">—</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if copy.is_available %}
+                          <span class="badge badge-available">E lirë</span>
+                        {% else %}
+                          <span class="badge badge-unavailable">Huazuar</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {% endif %}
 
             {% if book.subjects.all %}
             <tr>
