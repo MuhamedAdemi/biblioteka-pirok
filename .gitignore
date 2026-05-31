@@ -33,6 +33,9 @@ Thumbs.db
 # VS Code history
 .history/
 
+# Backups (ruhen vetem ne server)
+backups/
+
 # Build
 dist/
 build/

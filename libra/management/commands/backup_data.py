@@ -1,5 +1,5 @@
 import os
-import json
+import glob
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
@@ -7,7 +7,7 @@ from django.conf import settings
 
 
 class Command(BaseCommand):
-    help = 'Krijon backup të të dhënave të bibliotekës'
+    help = 'Krijon backup të të dhënave dhe mban vetëm 7 të fundit'
 
     def handle(self, *args, **options):
         backup_dir = os.path.join(settings.BASE_DIR, 'backups')
@@ -20,6 +20,14 @@ class Command(BaseCommand):
             call_command('dumpdata', 'libra', indent=2, stdout=f)
 
         size = os.path.getsize(filename) / 1024
+
+        # Mban vetem 7 backupet e fundit
+        old_backups = sorted(glob.glob(os.path.join(backup_dir, 'backup_*.json')))
+        while len(old_backups) > 7:
+            os.remove(old_backups.pop(0))
+
         self.stdout.write(
-            self.style.SUCCESS(f'✓ Backup u krijua: {filename} ({size:.1f} KB)')
+            self.style.SUCCESS(
+                f'✓ Backup: {filename} ({size:.1f} KB) — {len(old_backups)} backup gjithsej'
+            )
         )
