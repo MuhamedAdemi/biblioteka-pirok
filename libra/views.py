@@ -234,6 +234,9 @@ def book_edit(request, pk):
 
 @login_required
 def book_delete(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Vetëm administratori mund të fshijë libra.')
+        return redirect('book_detail', pk=pk)
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
         title = book.title
@@ -273,6 +276,9 @@ def book_copy_add(request, pk):
 
 @login_required
 def book_copy_delete(request, copy_pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Vetëm administratori mund të fshijë kopje.')
+        return redirect('catalog')
     copy = get_object_or_404(BookCopy, pk=copy_pk)
     book_pk = copy.book.pk
     if request.method == 'POST':
