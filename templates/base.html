@@ -109,6 +109,7 @@
       <ul class="nav flex-column mb-2">
         <li><a class="nav-link {% if request.resolver_match.url_name == 'staff_list' %}active{% endif %}" href="{% url 'staff_list' %}"><i class="bi bi-shield-check me-2"></i>Stafi</a></li>
         <li><a class="nav-link" href="{% url 'admin:index' %}"><i class="bi bi-gear me-2"></i>Admin Panel</a></li>
+        <li><a class="nav-link" href="{% url 'backup_download' %}"><i class="bi bi-download me-2 text-warning"></i>Shkarko Backup</a></li>
       </ul>
       {% endif %}
     </nav>

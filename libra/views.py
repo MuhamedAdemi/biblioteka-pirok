@@ -265,7 +265,8 @@ def book_copy_add(request, pk):
             return redirect('book_copy_list', pk=pk)
     else:
         form = BookCopyForm(initial={
-            'copy_number': BookCopy.next_copy_number(language=book.language)
+            'copy_number': BookCopy.next_copy_number(language=book.language),
+            'shelf_label': BookCopy.suggest_shelf_label(book.class_number),
         })
     return render(request, 'libra/book_copy_form.html', {'form': form, 'book': book})
 
@@ -590,6 +591,24 @@ def quick_loan(request):
 
 
 # ── STAFF MANAGEMENT ──────────────────────────────────────────────────────────
+
+@login_required
+def backup_download(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Vetëm super-admini mund të shkarkojë backup.')
+        return redirect('home')
+    from django.core.management import call_command
+    from django.http import HttpResponse
+    import io
+    from datetime import datetime
+    buf = io.StringIO()
+    call_command('dumpdata', 'libra', indent=2, stdout=buf)
+    content = buf.getvalue()
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    response = HttpResponse(content, content_type='application/json; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="backup_biblioteka_{timestamp}.json"'
+    return response
+
 
 @login_required
 def staff_list(request):

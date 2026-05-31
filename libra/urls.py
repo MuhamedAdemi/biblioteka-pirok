@@ -53,6 +53,9 @@ urlpatterns = [
     path('kthe/', views.quick_return, name='quick_return'),
     path('huazo/', views.quick_loan, name='quick_loan'),
 
+    # Backup
+    path('backup/', views.backup_download, name='backup_download'),
+
     # Staff management (superuser only)
     path('stafi/', views.staff_list, name='staff_list'),
     path('stafi/shto/', views.staff_create, name='staff_create'),

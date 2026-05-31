@@ -118,6 +118,7 @@ class BookAuthor(models.Model):
 class BookCopy(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='copies', verbose_name="Libri")
     copy_number = models.CharField(max_length=14, unique=True, verbose_name="Nr. Kopjes (Barkod)")
+    shelf_label = models.CharField(max_length=12, blank=True, verbose_name="Label Rafti (p.sh. 3-00001)")
     notes = models.CharField(max_length=200, blank=True, verbose_name="Shënime")
 
     class Meta:
@@ -130,6 +131,26 @@ class BookCopy(models.Model):
 
     def is_available(self):
         return not self.loan_set.filter(status__in=['active', 'overdue']).exists()
+
+    @classmethod
+    def suggest_shelf_label(cls, class_number=''):
+        if not class_number:
+            return ''
+        try:
+            first_digit = str(int(float(class_number.strip()[0])))
+        except (ValueError, IndexError):
+            first_digit = '0'
+        last = cls.objects.filter(
+            shelf_label__startswith=f'{first_digit}-'
+        ).order_by('-shelf_label').first()
+        if last and last.shelf_label:
+            try:
+                num = int(last.shelf_label.split('-')[1]) + 1
+            except (ValueError, IndexError):
+                num = 1
+        else:
+            num = 1
+        return f"{first_digit}-{str(num).zfill(5)}"
 
     @classmethod
     def next_copy_number(cls, language='sq'):
