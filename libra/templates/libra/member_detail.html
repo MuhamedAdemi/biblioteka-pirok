@@ -12,17 +12,22 @@
 <div class="row">
   <div class="col-md-4">
     <div class="card mb-3">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
+      <div class="card-header d-flex align-items-center justify-content-between py-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="member-avatar" style="width:40px;height:40px;font-size:.9rem">
+            {{ member.first_name|slice:":1"|upper }}{{ member.last_name|slice:":1"|upper }}
+          </span>
           <div>
-            <h5 class="mb-1">{{ member.full_name }}</h5>
-            <code class="text-muted">Nr. {{ member.membership_number }}</code>
+            <div class="fw-semibold fs-6">{{ member.full_name }}</div>
+            <code class="text-muted" style="font-size:.8rem">Nr. {{ member.membership_number }}</code>
           </div>
-          <a href="{% url 'member_edit' member.pk %}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-pencil"></i>
-          </a>
         </div>
-        <hr>
+        <a href="{% url 'member_edit' member.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        <hr class="mt-0 mb-3">
         {% if member.phone %}<p class="mb-1"><i class="bi bi-telephone me-2 text-muted"></i>{{ member.phone }}</p>{% endif %}
         {% if member.email %}<p class="mb-1"><i class="bi bi-envelope me-2 text-muted"></i>{{ member.email }}</p>{% endif %}
         {% if member.address %}<p class="mb-1"><i class="bi bi-geo-alt me-2 text-muted"></i>{{ member.address }}</p>{% endif %}

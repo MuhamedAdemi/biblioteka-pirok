@@ -29,7 +29,7 @@
       </thead>
       <tbody>
         {% for loan in loans %}
-        <tr>
+        <tr{% if loan.status == 'overdue' %} class="table-danger"{% endif %}>
           <td><a href="{% url 'book_detail' loan.book.pk %}" class="text-decoration-none">{{ loan.book.title|truncatechars:45 }}</a></td>
           <td><a href="{% url 'member_detail' loan.member.pk %}" class="text-decoration-none">{{ loan.member.full_name }}</a></td>
           <td><small>{{ loan.loan_date }}</small></td>

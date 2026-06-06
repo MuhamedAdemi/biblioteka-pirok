@@ -35,7 +35,12 @@
         {% for m in members %}
         <tr>
           <td><code>{{ m.membership_number }}</code></td>
-          <td><a href="{% url 'member_detail' m.pk %}" class="text-decoration-none fw-semibold">{{ m.full_name }}</a></td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="member-avatar">{{ m.first_name|slice:":1"|upper }}{{ m.last_name|slice:":1"|upper }}</span>
+              <a href="{% url 'member_detail' m.pk %}" class="text-decoration-none fw-semibold">{{ m.full_name }}</a>
+            </div>
+          </td>
           <td>{{ m.phone|default:"-" }}</td>
           <td>{{ m.email|default:"-" }}</td>
           <td>
