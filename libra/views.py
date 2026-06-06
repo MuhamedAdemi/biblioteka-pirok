@@ -209,12 +209,15 @@ def book_add(request):
         form = BookForm(initial={'isbn': isbn_initial})
         formset = BookAuthorFormSet()
     return render(request, 'libra/book_form.html', {
-        'form': form, 'formset': formset, 'action': 'Shto Libër'
+        'form': form, 'formset': formset, 'action': 'Shto Libër',
+        'existing_authors_json': '[]',
+        'book': None,
     })
 
 
 @login_required
 def book_edit(request, pk):
+    import json as _json
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
         form = BookForm(request.POST, instance=book)
@@ -227,8 +230,13 @@ def book_edit(request, pk):
     else:
         form = BookForm(instance=book)
         formset = BookAuthorFormSet(instance=book)
+    existing_authors = [
+        {'id': ba.author.pk, 'text': str(ba.author)}
+        for ba in book.book_authors.select_related('author').all()
+    ]
     return render(request, 'libra/book_form.html', {
-        'form': form, 'formset': formset, 'action': 'Ndrysho Libër', 'book': book
+        'form': form, 'formset': formset, 'action': 'Ndrysho Libër', 'book': book,
+        'existing_authors_json': _json.dumps(existing_authors),
     })
 
 
@@ -805,3 +813,31 @@ def shelf_label_suggest(request):
     class_number = request.GET.get('class_number', '').strip()
     suggestion = BookCopy.suggest_shelf_label(class_number)
     return JsonResponse({'shelf_label': suggestion})
+
+
+@login_required
+def next_copy_number_ajax(request):
+    """AJAX: kthe numrin e ardhshëm të barkod-it për gjuhën e zgjedhur."""
+    language = request.GET.get('language', 'sq')
+    cn = BookCopy.next_copy_number(language=language)
+    return JsonResponse({'copy_number': cn})
+
+
+@login_required
+def book_title_check(request):
+    """AJAX: kontrollo nëse ekzistojnë libra me titull të ngjashëm."""
+    q = request.GET.get('q', '').strip()
+    if len(q) < 3:
+        return JsonResponse({'books': []})
+    books = Book.objects.filter(title__icontains=q)[:6]
+    book_id = request.GET.get('book_id', '')  # kur ndryshojmë librin ekzistues
+    data = []
+    for b in books:
+        if str(b.pk) == book_id:
+            continue  # mos paralajmëro për librin që po editojmë
+        data.append({
+            'title': b.title,
+            'author': str(b.primary_author()) if b.primary_author() else '',
+            'year': b.year,
+        })
+    return JsonResponse({'books': data})
