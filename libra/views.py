@@ -703,3 +703,105 @@ def change_password(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'libra/change_password.html', {'form': form})
+
+
+# ── BARCODE SHEET GENERATOR ───────────────────────────────────────────────────
+
+@login_required
+def barcode_sheet(request):
+    """Gjenero fletë me barkode të para-printuara (56/faqe, 10 faqe = 560)."""
+    if not request.user.is_staff:
+        messages.error(request, 'Nuk keni leje.')
+        return redirect('home')
+
+    language = request.GET.get('language', '')
+    count = max(1, min(int(request.GET.get('count', 560)), 560))
+
+    if language:
+        prefix = Book.LANGUAGE_PREFIX.get(language, '401')
+        last = BookCopy.objects.filter(
+            copy_number__startswith=f'{prefix}-'
+        ).order_by('-copy_number').first()
+        if last:
+            try:
+                start_num = int(last.copy_number.split('-')[1]) + 1
+            except (ValueError, IndexError):
+                start_num = 1
+        else:
+            start_num = 1
+
+        barcodes = [f"{prefix}-{str(start_num + i).zfill(5)}" for i in range(count)]
+        pages = [barcodes[i:i + 56] for i in range(0, len(barcodes), 56)]
+
+        return render(request, 'libra/barcode_sheet_print.html', {
+            'pages': pages,
+            'language_display': dict(Book.LANGUAGE_CHOICES).get(language, language),
+            'prefix': prefix,
+            'start_num': start_num,
+            'count': count,
+        })
+
+    lang_choices_with_prefix = [
+        (code, label, Book.LANGUAGE_PREFIX.get(code, '401'))
+        for code, label in Book.LANGUAGE_CHOICES
+    ]
+    return render(request, 'libra/barcode_sheet.html', {
+        'lang_choices_with_prefix': lang_choices_with_prefix,
+    })
+
+
+# ── SHELF LABEL PRINT ─────────────────────────────────────────────────────────
+
+@login_required
+def shelf_label_print(request):
+    """Printo etiketa rafti (label shpine) për kopjet e librave."""
+    if not request.user.is_staff:
+        messages.error(request, 'Nuk keni leje.')
+        return redirect('home')
+
+    copies = BookCopy.objects.filter(
+        shelf_label__gt=''
+    ).select_related('book').order_by('shelf_label')
+
+    class_filter = request.GET.get('class_prefix', '').strip()
+    if class_filter:
+        copies = copies.filter(shelf_label__startswith=class_filter)
+
+    copies_list = list(copies)
+    # 7 kolona × 8 rreshta = 56 etiketa/faqe
+    pages = [copies_list[i:i + 56] for i in range(0, len(copies_list), 56)]
+
+    return render(request, 'libra/shelf_label_print.html', {
+        'pages': pages,
+        'total': len(copies_list),
+        'class_filter': class_filter,
+    })
+
+
+# ── SUBJECT AJAX ──────────────────────────────────────────────────────────────
+
+@login_required
+def subject_search(request):
+    q = request.GET.get('q', '').strip()
+    subjects = Subject.objects.filter(name__icontains=q)[:15]
+    data = [{'id': s.pk, 'text': s.name} for s in subjects]
+    return JsonResponse({'results': data})
+
+
+@login_required
+def subject_add_ajax(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            subject, created = Subject.objects.get_or_create(name=name)
+            return JsonResponse({'id': subject.pk, 'text': subject.name, 'created': created})
+        return JsonResponse({'error': 'Emri është i detyrueshëm'}, status=400)
+    return JsonResponse({'error': 'Metodë e gabuar'}, status=405)
+
+
+@login_required
+def shelf_label_suggest(request):
+    """AJAX: sugjero shelf_label bazuar në class_number."""
+    class_number = request.GET.get('class_number', '').strip()
+    suggestion = BookCopy.suggest_shelf_label(class_number)
+    return JsonResponse({'shelf_label': suggestion})

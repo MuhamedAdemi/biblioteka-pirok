@@ -49,9 +49,9 @@ class Book(models.Model):
     ]
     LANGUAGE_PREFIX = {
         'sq': '101',
-        'en': '201',
-        'mk': '301',
-        'other': '501',
+        'mk': '201',
+        'en': '301',
+        'other': '401',
     }
 
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
@@ -136,12 +136,14 @@ class BookCopy(models.Model):
     def suggest_shelf_label(cls, class_number=''):
         if not class_number:
             return ''
-        try:
-            first_digit = str(int(float(class_number.strip()[0])))
-        except (ValueError, IndexError):
-            first_digit = '0'
+        import re
+        match = re.match(r'(\d+)', class_number.strip())
+        if not match:
+            return ''
+        raw = match.group(1)[:3]
+        prefix = raw.ljust(3, '0')  # '32' → '320', '3' → '300', '320' → '320'
         last = cls.objects.filter(
-            shelf_label__startswith=f'{first_digit}-'
+            shelf_label__startswith=f'{prefix}-'
         ).order_by('-shelf_label').first()
         if last and last.shelf_label:
             try:
@@ -150,7 +152,7 @@ class BookCopy(models.Model):
                 num = 1
         else:
             num = 1
-        return f"{first_digit}-{str(num).zfill(5)}"
+        return f"{prefix}-{str(num).zfill(5)}"
 
     @classmethod
     def next_copy_number(cls, language='sq'):
@@ -165,7 +167,7 @@ class BookCopy(models.Model):
                 num = 1
         else:
             num = 1
-        return f"{prefix}-{str(num).zfill(6)}"
+        return f"{prefix}-{str(num).zfill(5)}"
 
 
 class Member(models.Model):

@@ -138,10 +138,17 @@
 
     <div class="col-lg-4">
       <div class="card mb-3">
-        <div class="card-header fw-semibold">Kategoritë / Lëndët</div>
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+          Kategoritë / Lëndët
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#modalKategori" title="Shto kategori të re">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
         <div class="card-body">
           {{ form.subjects }}
-          <small class="text-muted d-block mt-1">Mbaj Ctrl/Cmd për shumë zgjedhje</small>
+          <small class="text-muted d-block mt-1">Kërko në anglisht. Shto të re me <i class="bi bi-plus-lg"></i>.</small>
+          {% if form.subjects.errors %}<div class="text-danger small mt-1">{{ form.subjects.errors }}</div>{% endif %}
         </div>
       </div>
       <div class="card">
@@ -182,6 +189,31 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anulo</button>
         <button type="button" class="btn btn-primary btn-sm" id="btnShtojAutor">
+          <i class="bi bi-check me-1"></i>Shto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: KATEGORI E RE ───────────────────────────────────────────── -->
+<div class="modal fade" id="modalKategori" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-tag-fill me-2"></i>Shto Kategori të Re</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Emri (anglisht) <span class="text-danger">*</span></label>
+          <input type="text" id="kategoriEmri" class="form-control" placeholder="p.sh. Law, Economics, History">
+        </div>
+        <div id="kategoriGabim" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anulo</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnShtojKategori">
           <i class="bi bi-check me-1"></i>Shto
         </button>
       </div>
@@ -231,6 +263,13 @@ new TomSelect('#{{ form.publisher.id_for_label }}', {
   maxOptions: 50,
 });
 
+// ── Tom Select për Subjects (multi-select me kërkim)
+new TomSelect('#{{ form.subjects.id_for_label }}', {
+  plugins: ['remove_button'],
+  placeholder: 'Kërko kategori (anglisht)...',
+  maxOptions: 100,
+});
+
 // ── Tom Select për çdo select autori në formset
 function initAuthorSelects() {
   document.querySelectorAll('select[name$="-author"]').forEach(function(el) {
@@ -271,6 +310,31 @@ document.getElementById('btnShtojAutor').addEventListener('click', function() {
     document.getElementById('autorMbiemri').value = '';
     document.getElementById('autorEmri').value = '';
     bootstrap.Modal.getInstance(document.getElementById('modalAutor')).hide();
+  });
+});
+
+// ── Shto Kategori
+document.getElementById('btnShtojKategori').addEventListener('click', function() {
+  const emri = document.getElementById('kategoriEmri').value.trim();
+  const gabim = document.getElementById('kategoriGabim');
+  if (!emri) { gabim.textContent = 'Emri është i detyrueshëm.'; gabim.classList.remove('d-none'); return; }
+  gabim.classList.add('d-none');
+
+  fetch('{% url "subject_add_ajax" %}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `name=${encodeURIComponent(emri)}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { gabim.textContent = data.error; gabim.classList.remove('d-none'); return; }
+    const sel = document.getElementById('{{ form.subjects.id_for_label }}');
+    if (sel.tomselect) {
+      sel.tomselect.addOption({value: data.id, text: data.text});
+      sel.tomselect.addItem(data.id);
+    }
+    document.getElementById('kategoriEmri').value = '';
+    bootstrap.Modal.getInstance(document.getElementById('modalKategori')).hide();
   });
 });
 

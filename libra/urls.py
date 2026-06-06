@@ -56,6 +56,15 @@ urlpatterns = [
     # Backup
     path('backup/', views.backup_download, name='backup_download'),
 
+    # Barcode & Shelf Label printing
+    path('barkod-fletat/', views.barcode_sheet, name='barcode_sheet'),
+    path('label-rafti/', views.shelf_label_print, name='shelf_label_print'),
+
+    # AJAX – subjects / categories
+    path('ajax/kategori-kerko/', views.subject_search, name='subject_search'),
+    path('ajax/kategori-shto/', views.subject_add_ajax, name='subject_add_ajax'),
+    path('ajax/label-sugjero/', views.shelf_label_suggest, name='shelf_label_suggest'),
+
     # Staff management (superuser only)
     path('stafi/', views.staff_list, name='staff_list'),
     path('stafi/shto/', views.staff_create, name='staff_create'),

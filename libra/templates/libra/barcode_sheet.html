@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Gjenero Barkode – Biblioteka Pirok{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h4 class="mb-1"><i class="bi bi-upc-scan me-2 text-primary"></i>Gjenero Fletë Barkodesh</h4>
+    <p class="text-muted mb-4">56 barkode/faqe · 10 faqe = 560 total · Dimensionet: 5 cm × 2 cm</p>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="get" action="">
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Gjuha e librave <span class="text-danger">*</span></label>
+            <div class="row g-2 mt-1">
+              {% for code, label, prefix in lang_choices_with_prefix %}
+              <div class="col-6">
+                <input type="radio" class="btn-check" name="language" id="lang_{{ code }}" value="{{ code }}" required>
+                <label class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
+                       for="lang_{{ code }}">
+                  <span><i class="bi bi-translate me-2"></i>{{ label }}</span>
+                  <span class="badge bg-dark">{{ prefix }}</span>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            <small class="text-muted mt-2 d-block">Prefiks: Shqip=101, Maqedonisht=201, Anglisht=301, Tjera=401</small>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Sasia</label>
+            <div class="row g-2 mt-1">
+              <div class="col">
+                <input type="radio" class="btn-check" name="count" id="c56" value="56">
+                <label class="btn btn-outline-secondary w-100" for="c56">56 <small>(1 faqe)</small></label>
+              </div>
+              <div class="col">
+                <input type="radio" class="btn-check" name="count" id="c280" value="280">
+                <label class="btn btn-outline-secondary w-100" for="c280">280 <small>(5 faqe)</small></label>
+              </div>
+              <div class="col">
+                <input type="radio" class="btn-check" name="count" id="c560" value="560" checked>
+                <label class="btn btn-outline-secondary w-100" for="c560">560 <small>(10 faqe)</small></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info py-2 small mb-4">
+            <i class="bi bi-info-circle me-1"></i>
+            Numrat do të fillojnë nga <strong>numri i ardhshëm i disponueshëm</strong> në bazën e të dhënave.
+            Barkodeve do t'u ngjiten librave pas printimit — pastaj skanoni për regjistrim.
+          </div>
+
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-printer me-2"></i>Gjenero dhe Printo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <h6 class="text-muted">Si funksionon?</h6>
+      <ol class="text-muted small lh-lg">
+        <li>Zgjidhni gjuhën dhe sasinë → klikoni <strong>Gjenero</strong></li>
+        <li>Hapet faqja e printimit — printoni direkt nga browseri (Ctrl+P)</li>
+        <li>Ngjitni barkod-et mbi kapakun e librave</li>
+        <li>Kur regjistroni kopje libri, skanoni barkod-in → fusha mbushet automatikisht</li>
+      </ol>
+    </div>
+  </div>
+</div>
+{% endblock %}

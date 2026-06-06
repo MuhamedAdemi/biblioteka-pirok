@@ -104,6 +104,11 @@
       <ul class="nav flex-column mb-2">
         <li><a class="nav-link {% if request.resolver_match.url_name == 'loan_list' %}active{% endif %}" href="{% url 'loan_list' %}"><i class="bi bi-arrow-left-right me-2"></i>Të gjitha</a></li>
       </ul>
+      <div class="section-label">Etiketa</div>
+      <ul class="nav flex-column mb-2">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'barcode_sheet' %}active{% endif %}" href="{% url 'barcode_sheet' %}"><i class="bi bi-upc-scan me-2 text-primary"></i>Barkode Libri</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'shelf_label_print' %}active{% endif %}" href="{% url 'shelf_label_print' %}"><i class="bi bi-tag me-2 text-info"></i>Etiketa Rafti</a></li>
+      </ul>
       {% if user.is_superuser %}
       <div class="section-label">Admin</div>
       <ul class="nav flex-column mb-2">

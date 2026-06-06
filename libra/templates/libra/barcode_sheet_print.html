@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <title>Barkode – {{ language_display }} – Biblioteka Pirok</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { background: #fff; font-family: Arial, sans-serif; }
+
+    /* ── Ekran: buton printimi ── */
+    .print-controls {
+      position: fixed; top: 12px; right: 12px; z-index: 999;
+      display: flex; gap: 8px;
+    }
+    .print-controls button, .print-controls a {
+      padding: 8px 18px; border-radius: 6px; cursor: pointer;
+      font-size: 14px; text-decoration: none; display: inline-block;
+    }
+    .btn-print { background: #0d6efd; color: #fff; border: none; }
+    .btn-back  { background: #6c757d; color: #fff; border: none; }
+
+    .info-bar {
+      background: #f8f9fa; border-bottom: 1px solid #dee2e6;
+      padding: 10px 16px; font-size: 13px; color: #495057;
+    }
+
+    /* ── Faqja e printimit ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 5mm;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(14, 1fr);
+      gap: 0;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+
+    /* ── Etiketa individuale: 5cm × 2cm ── */
+    .label {
+      width: 50mm;
+      height: 20.5mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 0.3pt dotted #ccc;
+      padding: 1mm 1.5mm;
+    }
+
+    .label-name {
+      font-size: 5pt;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.3pt;
+      line-height: 1.1;
+      margin-bottom: 0.5mm;
+    }
+
+    .label svg {
+      max-width: 46mm;
+      max-height: 10mm;
+    }
+
+    .label-code {
+      font-size: 6.5pt;
+      font-weight: 700;
+      letter-spacing: 1pt;
+      margin-top: 0.5mm;
+    }
+
+    /* ── Print media ── */
+    @media print {
+      .print-controls, .info-bar { display: none !important; }
+
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      body { background: #fff; }
+
+      .page {
+        margin: 0;
+        padding: 5mm;
+        border: none;
+      }
+
+      .label {
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-controls">
+  <a href="{% url 'barcode_sheet' %}" class="btn-back">← Kthehu</a>
+  <button class="btn-print" onclick="window.print()">🖨 Printo</button>
+</div>
+
+<div class="info-bar d-print-none">
+  <strong>{{ language_display }}</strong> &nbsp;|&nbsp;
+  Prefiks: <strong>{{ prefix }}</strong> &nbsp;|&nbsp;
+  Numri fillestar: <strong>{{ prefix }}-{{ start_num|stringformat:"05d" }}</strong> &nbsp;|&nbsp;
+  Total: <strong>{{ count }}</strong> barkode &nbsp;|&nbsp;
+  <strong>{{ pages|length }}</strong> faqe
+</div>
+
+{% for page in pages %}
+<div class="page">
+  {% for code in page %}
+  <div class="label">
+    <div class="label-name">Biblioteka &#8220;Pirok&#8221;</div>
+    <svg class="barcode" data-value="{{ code }}"></svg>
+    <div class="label-code">{{ code }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<script>
+document.querySelectorAll('svg.barcode').forEach(function(el) {
+  JsBarcode(el, el.getAttribute('data-value'), {
+    format: 'CODE128',
+    displayValue: false,
+    height: 32,
+    width: 1.2,
+    margin: 1,
+    background: '#ffffff',
+    lineColor: '#000000',
+  });
+});
+</script>
+
+</body>
+</html>
