@@ -86,8 +86,8 @@ def contact(request):
                 send_mail(
                     subject=full_subject,
                     message=body,
-                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'biblioteka.pirok@gmail.com'),
-                    recipient_list=[getattr(settings, 'CONTACT_EMAIL', 'biblioteka.pirok@gmail.com')],
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'pirokbiblioteka@gmail.com'),
+                    recipient_list=[getattr(settings, 'CONTACT_EMAIL', 'pirokbiblioteka@gmail.com')],
                     fail_silently=False,
                 )
                 messages.success(request, f'Faleminderit {name}! Mesazhi juaj u dërgua. Do t\'ju kontaktojmë së shpejti.')

@@ -87,8 +87,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', 'biblioteka.pirok@gmail.com')
-CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'biblioteka.pirok@gmail.com')
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', 'pirokbiblioteka@gmail.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'pirokbiblioteka@gmail.com')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
