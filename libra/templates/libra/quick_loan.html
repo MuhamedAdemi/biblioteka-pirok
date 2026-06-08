@@ -3,73 +3,219 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-7 col-lg-6">
-    <h4 class="mb-4 text-center"><i class="bi bi-arrow-right-circle me-2 text-success"></i>Huazim i Shpejtë</h4>
+  <div class="col-lg-9 col-xl-8">
 
-    <div class="card mb-3">
-      <div class="card-body py-4">
-        <form method="post" autocomplete="off">
-          {% csrf_token %}
-          <div class="row g-3 mb-3">
-            <div class="col-12 text-center">
-              <label class="form-label fw-semibold">{{ form.member_number.label }}</label>
-              {{ form.member_number }}
-            </div>
-            <div class="col-12 text-center">
-              <label class="form-label fw-semibold">{{ form.copy_number.label }}</label>
-              {{ form.copy_number }}
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">{{ form.due_days.label }}</label>
-              <div class="d-flex gap-2 align-items-center justify-content-center">
-                {{ form.due_days }}
-                <span class="text-muted">ditë</span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <button type="submit" class="btn btn-success btn-lg px-5 quick-btn">
-              <i class="bi bi-arrow-right-circle me-2"></i>Huazo
-            </button>
-          </div>
-        </form>
-      </div>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="mb-0">
+        <i class="bi bi-arrow-right-circle me-2" style="color:var(--lib-orange)"></i>Huazim i Shpejtë
+      </h4>
+      <a href="{% url 'quick_return' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-return-left me-1"></i>Kthe Libër
+      </a>
     </div>
 
+    <form method="post" autocomplete="off" id="loan-form">
+      {% csrf_token %}
+
+      <!-- ── Dy panelet: Anëtari + Libri ──────────── -->
+      <div class="row g-3 mb-3">
+
+        <!-- ANËTARI -->
+        <div class="col-md-6">
+          <div class="card h-100" id="card-member">
+            <div class="card-header d-flex align-items-center gap-2 py-2"
+                 style="background:var(--lib-blue);color:white;border-radius:10px 10px 0 0 !important">
+              <i class="bi bi-person-badge fs-5"></i>
+              <strong>Anëtari</strong>
+              <span class="ms-auto badge" id="badge-member" style="display:none"></span>
+            </div>
+            <div class="card-body pb-2">
+              <label class="form-label fw-semibold small text-muted">Skano ID kartën ose shkruaj nr. anëtarësie</label>
+              <input type="text" name="member_number" id="member_number"
+                     class="form-control form-control-lg text-center"
+                     placeholder="p.sh. 10-0001"
+                     autocomplete="off" spellcheck="false">
+              <div id="member-info" class="mt-2" style="min-height:48px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIBRI -->
+        <div class="col-md-6">
+          <div class="card h-100" id="card-copy">
+            <div class="card-header d-flex align-items-center gap-2 py-2"
+                 style="background:var(--lib-blue);color:white;border-radius:10px 10px 0 0 !important">
+              <i class="bi bi-upc-scan fs-5"></i>
+              <strong>Libri (Barkod)</strong>
+              <span class="ms-auto badge" id="badge-copy" style="display:none"></span>
+            </div>
+            <div class="card-body pb-2">
+              <label class="form-label fw-semibold small text-muted">Skano barkod-in ose shkruaj nr. kopjes</label>
+              <input type="text" name="copy_number" id="copy_number"
+                     class="form-control form-control-lg text-center"
+                     placeholder="p.sh. 334-00001"
+                     autocomplete="off" spellcheck="false">
+              <div id="copy-info" class="mt-2" style="min-height:48px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Afati ──────────────────────────────── -->
+      <div class="card mb-3">
+        <div class="card-body py-2 px-3">
+          <label class="form-label fw-semibold small text-muted mb-2">Afati i kthimit</label>
+          <div class="d-flex gap-2 flex-wrap">
+            {% for val, label in form.due_days.field.choices %}
+            <div>
+              <input type="radio" class="btn-check" name="due_days" id="days_{{ val }}"
+                     value="{{ val }}" {% if val == '14' %}checked{% endif %}>
+              <label class="btn btn-outline-secondary" for="days_{{ val }}">{{ label }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Butoni Huazo ────────────────────────── -->
+      <div class="d-grid">
+        <button type="submit" class="btn btn-lg" id="btn-loan"
+                style="background:var(--lib-orange);color:white;font-size:1.1rem" disabled>
+          <i class="bi bi-arrow-right-circle me-2"></i>Regjistro Huazimin
+        </button>
+      </div>
+    </form>
+
+    <!-- ── Konfirmim ──────────────────────────────── -->
     {% if result and result.success %}
-    <div class="card border-success">
-      <div class="card-body text-center text-success py-3">
-        <i class="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
-        <h5>Huazimi u regjistrua!</h5>
-        <p class="mb-1"><strong>{{ result.loan.copy.book.title }}</strong></p>
-        <p class="mb-0 text-muted">
-          Kopja: <code>{{ result.loan.copy.copy_number }}</code> &nbsp;|&nbsp;
-          Anëtari: {{ result.loan.member.full_name }} &nbsp;|&nbsp;
-          Afati: <strong>{{ result.loan.due_date }}</strong>
+    <div class="card mt-3 border-0" style="background:#D1FAE5">
+      <div class="card-body text-center py-3">
+        <i class="bi bi-check-circle-fill fs-1 d-block mb-2 text-success"></i>
+        <h5 class="text-success">Huazimi u regjistrua!</h5>
+        <p class="mb-1 fw-semibold">{{ result.loan.copy.book.title }}</p>
+        <p class="text-muted small mb-0">
+          <i class="bi bi-upc me-1"></i><code>{{ result.loan.copy.copy_number }}</code>
+          &nbsp;·&nbsp;
+          <i class="bi bi-person me-1"></i>{{ result.loan.member.full_name }}
+          &nbsp;·&nbsp;
+          <i class="bi bi-calendar me-1"></i>Afati: <strong>{{ result.loan.due_date }}</strong>
         </p>
       </div>
     </div>
     {% endif %}
 
-    <div class="text-center mt-3">
-      <a href="{% url 'quick_return' %}" class="btn btn-outline-warning">
-        <i class="bi bi-arrow-return-left me-1"></i>Kalo te Kthimi i Shpejtë
-      </a>
-    </div>
   </div>
 </div>
 
 <script>
-const memberField = document.querySelector('input[name="member_number"]');
-const copyField   = document.querySelector('input[name="copy_number"]');
-const form        = document.querySelector('form');
+(function() {
+  const memberInput  = document.getElementById('member_number');
+  const copyInput    = document.getElementById('copy_number');
+  const memberInfo   = document.getElementById('member-info');
+  const copyInfo     = document.getElementById('copy-info');
+  const badgeMember  = document.getElementById('badge-member');
+  const badgeCopy    = document.getElementById('badge-copy');
+  const cardMember   = document.getElementById('card-member');
+  const cardCopy     = document.getElementById('card-copy');
+  const btnLoan      = document.getElementById('btn-loan');
+  const memberUrl    = '{% url "member_lookup_ajax" %}';
+  const copyUrl      = '{% url "copy_lookup_ajax" %}';
 
-memberField.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); if (this.value.trim()) copyField.focus(); }
-});
-copyField.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); if (this.value.trim() && memberField.value.trim()) form.submit(); }
-});
-memberField.focus();
+  let memberOk = false;
+  let copyOk   = false;
+  let memberTimer, copyTimer;
+
+  function checkSubmit() {
+    btnLoan.disabled = !(memberOk && copyOk);
+  }
+
+  function setCard(card, ok) {
+    card.style.outline = ok ? '2px solid #30D158' : '2px solid #FF3B30';
+  }
+
+  function lookupMember(val) {
+    if (!val) { memberInfo.innerHTML = ''; memberOk = false; setCard(cardMember, false); checkSubmit(); return; }
+    memberInfo.innerHTML = '<small class="text-muted"><i class="bi bi-hourglass-split me-1"></i>Duke kërkuar...</small>';
+    fetch(memberUrl + '?q=' + encodeURIComponent(val))
+      .then(r => r.json())
+      .then(d => {
+        if (d.found) {
+          const warn = d.overdue_loans > 0
+            ? `<span class="text-warning ms-1"><i class="bi bi-exclamation-triangle-fill"></i> ${d.overdue_loans} vonuar</span>` : '';
+          const inactive = !d.is_active
+            ? '<div class="text-danger small"><i class="bi bi-x-circle me-1"></i>Anëtari është JOAKTIV</div>' : '';
+          memberInfo.innerHTML = `
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <div class="member-avatar" style="width:36px;height:36px;font-size:.82rem">${d.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+              <div>
+                <div class="fw-semibold" style="font-size:.92rem">${d.name}</div>
+                <small class="text-muted">Nr. <code>${d.number}</code> · ${d.active_loans} huazime aktive${warn}</small>
+              </div>
+            </div>${inactive}`;
+          memberOk = d.is_active;
+          badgeMember.textContent = d.is_active ? '✓' : '✗';
+          badgeMember.style.cssText = d.is_active ? 'display:inline;background:#30D158' : 'display:inline;background:#FF3B30';
+          setCard(cardMember, d.is_active);
+        } else {
+          memberInfo.innerHTML = `<small class="text-danger"><i class="bi bi-x-circle me-1"></i>${d.msg || 'Nuk u gjet.'}</small>`;
+          memberOk = false;
+          badgeMember.textContent = '✗';
+          badgeMember.style.cssText = 'display:inline;background:#FF3B30';
+          setCard(cardMember, false);
+        }
+        checkSubmit();
+      }).catch(() => { memberInfo.innerHTML = ''; });
+  }
+
+  function lookupCopy(val) {
+    if (!val) { copyInfo.innerHTML = ''; copyOk = false; setCard(cardCopy, false); checkSubmit(); return; }
+    copyInfo.innerHTML = '<small class="text-muted"><i class="bi bi-hourglass-split me-1"></i>Duke kërkuar...</small>';
+    fetch(copyUrl + '?q=' + encodeURIComponent(val))
+      .then(r => r.json())
+      .then(d => {
+        if (d.found) {
+          const avail = d.available
+            ? '<span class="badge badge-available"><i class="bi bi-check me-1"></i>E disponueshme</span>'
+            : `<span class="badge badge-unavailable"><i class="bi bi-x me-1"></i>E zënë nga ${d.loan_member || '?'}</span>`;
+          const lost = d.status === 'lost' ? '<div class="text-danger small mt-1"><i class="bi bi-x-octagon me-1"></i>Kopja është shënuar si E HUMBUR</div>' : '';
+          copyInfo.innerHTML = `
+            <div class="mt-1">
+              <div class="fw-semibold" style="font-size:.92rem">${d.title}</div>
+              ${d.author ? `<small class="text-muted">${d.author}</small><br>` : ''}
+              ${avail}${lost}
+            </div>`;
+          copyOk = d.available;
+          badgeCopy.textContent = d.available ? '✓' : '✗';
+          badgeCopy.style.cssText = d.available ? 'display:inline;background:#30D158' : 'display:inline;background:#FF3B30';
+          setCard(cardCopy, d.available);
+        } else {
+          copyInfo.innerHTML = `<small class="text-danger"><i class="bi bi-x-circle me-1"></i>${d.msg || 'Nuk u gjet.'}</small>`;
+          copyOk = false;
+          badgeCopy.textContent = '✗';
+          badgeCopy.style.cssText = 'display:inline;background:#FF3B30';
+          setCard(cardCopy, false);
+        }
+        checkSubmit();
+      }).catch(() => { copyInfo.innerHTML = ''; });
+  }
+
+  memberInput.addEventListener('input', function() {
+    clearTimeout(memberTimer);
+    memberTimer = setTimeout(() => lookupMember(this.value.trim()), 350);
+  });
+  memberInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); clearTimeout(memberTimer); lookupMember(this.value.trim()); copyInput.focus(); }
+  });
+
+  copyInput.addEventListener('input', function() {
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => lookupCopy(this.value.trim()), 350);
+  });
+  copyInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); clearTimeout(copyTimer); lookupCopy(this.value.trim()); }
+  });
+
+  memberInput.focus();
+})();
 </script>
 {% endblock %}

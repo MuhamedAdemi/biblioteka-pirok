@@ -130,42 +130,41 @@ class LoanReturnForm(forms.ModelForm):
 
 class QuickReturnForm(forms.Form):
     copy_number = forms.CharField(
-        max_length=8,
+        max_length=20,
         label="Nr. i Kopjes (Barkod)",
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg text-center',
-            'placeholder': '0001',
+            'placeholder': 'Skano ose shkruaj nr. kopjes...',
             'autofocus': True,
-            'style': 'font-size:2rem; letter-spacing:.3rem; max-width:200px',
+            'autocomplete': 'off',
         })
     )
 
 
 class QuickLoanForm(forms.Form):
     member_number = forms.CharField(
-        max_length=8,
+        max_length=20,
         label="Nr. i Anëtarit",
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg text-center',
-            'placeholder': '0001',
-            'style': 'font-size:1.5rem; letter-spacing:.2rem',
+            'placeholder': 'Skano ID kartën ose shkruaj nr...',
+            'autocomplete': 'off',
         })
     )
     copy_number = forms.CharField(
-        max_length=8,
+        max_length=20,
         label="Nr. i Kopjes (Barkod)",
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg text-center',
-            'placeholder': '0001',
-            'style': 'font-size:1.5rem; letter-spacing:.2rem',
+            'placeholder': 'Skano barkod-in e librit...',
+            'autocomplete': 'off',
         })
     )
-    due_days = forms.IntegerField(
+    due_days = forms.ChoiceField(
+        label="Afati i kthimit",
+        choices=[(7, '7 ditë'), (14, '14 ditë'), (21, '21 ditë'), (30, '30 ditë')],
         initial=14,
-        min_value=1,
-        max_value=90,
-        label="Afati (ditë)",
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'value': 14})
+        widget=forms.RadioSelect(attrs={'class': 'btn-check'})
     )
 
 

@@ -3,49 +3,155 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-6 col-lg-5">
-    <h4 class="mb-4 text-center"><i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthim i Shpejtë</h4>
+  <div class="col-md-8 col-lg-6">
 
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="mb-0">
+        <i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthim i Shpejtë
+      </h4>
+      <a href="{% url 'quick_loan' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-right-circle me-1"></i>Huazo Libër
+      </a>
+    </div>
+
+    <!-- ── Forma e kthimit ────────────────────────── -->
     <div class="card mb-3">
-      <div class="card-body text-center py-4">
-        <p class="text-muted mb-3">Skano ose shtyp numrin e kopjes</p>
-        <form method="post" autocomplete="off">
+      <div class="card-body">
+        <label class="form-label fw-semibold text-muted small">
+          <i class="bi bi-upc-scan me-1"></i>Skano barkod-in ose shkruaj numrin e kopjes
+        </label>
+        <form method="post" autocomplete="off" id="return-form">
           {% csrf_token %}
-          <div class="d-flex justify-content-center mb-3">
-            {{ form.copy_number }}
+          <div class="d-flex gap-2">
+            <input type="text" name="copy_number" id="copy_number"
+                   class="form-control form-control-lg text-center"
+                   placeholder="p.sh. 334-00001"
+                   autocomplete="off" spellcheck="false" autofocus>
+            <button type="submit" class="btn btn-lg btn-warning" id="btn-return" style="white-space:nowrap">
+              <i class="bi bi-arrow-return-left me-1"></i>Kthe
+            </button>
           </div>
-          <button type="submit" class="btn btn-warning btn-lg px-5 quick-btn">
-            <i class="bi bi-arrow-return-left me-2"></i>Kthe
-          </button>
         </form>
+
+        <!-- AJAX preview panel -->
+        <div id="loan-preview" class="mt-3" style="display:none">
+          <hr class="my-2">
+          <div id="preview-content"></div>
+        </div>
       </div>
     </div>
 
+    <!-- ── Konfirmim pas kthimit ──────────────────── -->
     {% if result %}
       {% if result.success %}
-      <div class="card border-success">
-        <div class="card-body text-center text-success py-3">
-          <i class="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
-          <h5>Libri u kthye me sukses!</h5>
-          <p class="mb-1"><strong>{{ result.copy.book.title }}</strong></p>
-          <p class="mb-0 text-muted">Anëtari: {{ result.loan.member.full_name }} · Kopja: <code>{{ result.copy.copy_number }}</code></p>
+      <div class="card border-0" style="background:#D1FAE5">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-check-circle-fill fs-1 text-success flex-shrink-0"></i>
+            <div>
+              <div class="fw-bold fs-6">{{ result.copy.book.title }}</div>
+              <div class="text-muted small">
+                <i class="bi bi-person me-1"></i>{{ result.loan.member.full_name }}
+                &nbsp;·&nbsp;
+                <i class="bi bi-upc me-1"></i><code>{{ result.copy.copy_number }}</code>
+                &nbsp;·&nbsp;
+                <i class="bi bi-clock me-1"></i>{{ result.days_held }} ditë
+                {% if result.days_overdue > 0 %}
+                <span class="text-danger ms-1">(vonuar {{ result.days_overdue }} ditë)</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Mark as lost option -->
+          <div class="mt-2 text-end">
+            <form method="post" action="{% url 'mark_copy_lost' result.copy.pk %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'quick_return' %}">
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Shëno kopjen [{{ result.copy.copy_number }}] si të HUMBUR?')">
+                <i class="bi bi-x-octagon me-1"></i>Shëno si Humbur
+              </button>
+            </form>
+          </div>
         </div>
       </div>
       {% else %}
-      <div class="card border-danger">
-        <div class="card-body text-center text-danger py-3">
-          <i class="bi bi-x-circle-fill fs-1 d-block mb-2"></i>
-          <p class="mb-0">{{ result.msg }}</p>
+      <div class="card border-0" style="background:#FEE2E2">
+        <div class="card-body d-flex align-items-center gap-3 py-3">
+          <i class="bi bi-x-circle-fill fs-1 text-danger flex-shrink-0"></i>
+          <div class="text-danger">{{ result.msg }}</div>
         </div>
       </div>
       {% endif %}
     {% endif %}
 
-    <div class="text-center mt-3">
-      <a href="{% url 'quick_loan' %}" class="btn btn-outline-success">
-        <i class="bi bi-arrow-right-circle me-1"></i>Kalo te Huazimi i Shpejtë
-      </a>
-    </div>
   </div>
 </div>
+
+<script>
+(function() {
+  const input    = document.getElementById('copy_number');
+  const preview  = document.getElementById('loan-preview');
+  const content  = document.getElementById('preview-content');
+  const copyUrl  = '{% url "copy_lookup_ajax" %}';
+  let timer;
+
+  function lookup(val) {
+    if (!val) { preview.style.display = 'none'; return; }
+    fetch(copyUrl + '?q=' + encodeURIComponent(val))
+      .then(r => r.json())
+      .then(d => {
+        if (!d.found) {
+          content.innerHTML = `<small class="text-danger"><i class="bi bi-x-circle me-1"></i>${d.msg || 'Nuk u gjet.'}</small>`;
+          preview.style.display = 'block';
+          return;
+        }
+        if (!d.loan_member) {
+          content.innerHTML = `
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle text-muted"></i>
+              <span class="text-muted small">"${d.title}" — nuk ka huazim aktiv (është e lirë).</span>
+            </div>`;
+          preview.style.display = 'block';
+          return;
+        }
+        const overdueHtml = d.days_overdue > 0
+          ? `<span class="badge bg-danger ms-1">Vonuar ${d.days_overdue} ditë</span>` : '';
+        content.innerHTML = `
+          <div class="p-2 rounded" style="background:#F5F5F7">
+            <div class="fw-semibold">${d.title}</div>
+            <div class="small text-muted mt-1">
+              <i class="bi bi-upc me-1"></i><code>${d.copy_number}</code>
+            </div>
+            <hr class="my-2">
+            <div class="row g-2 small">
+              <div class="col-6">
+                <div class="text-muted">Anëtari</div>
+                <div class="fw-semibold">${d.loan_member}</div>
+                <div class="text-muted">Nr. <code>${d.loan_member_number}</code></div>
+              </div>
+              <div class="col-6">
+                <div class="text-muted">Huazuar</div>
+                <div class="fw-semibold">${d.loan_date}</div>
+                <div class="text-muted">Afati: ${d.due_date} ${overdueHtml}</div>
+              </div>
+            </div>
+            <div class="mt-2 small">
+              <i class="bi bi-clock me-1 text-muted"></i>Ka pasur librin <strong>${d.days_held}</strong> ditë
+            </div>
+          </div>`;
+        preview.style.display = 'block';
+      }).catch(() => { preview.style.display = 'none'; });
+  }
+
+  input.addEventListener('input', function() {
+    clearTimeout(timer);
+    const val = this.value.trim();
+    timer = setTimeout(() => lookup(val), 350);
+  });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { clearTimeout(timer); lookup(this.value.trim()); }
+  });
+})();
+</script>
 {% endblock %}

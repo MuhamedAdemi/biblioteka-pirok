@@ -550,17 +550,23 @@ def quick_return(request):
     if request.method == 'POST':
         form = QuickReturnForm(request.POST)
         if form.is_valid():
-            cn = form.cleaned_data['copy_number'].strip().zfill(4)
+            cn = form.cleaned_data['copy_number'].strip()
             try:
                 copy = BookCopy.objects.select_related('book').get(copy_number=cn)
                 loan = Loan.objects.filter(
                     copy=copy, status__in=['active', 'overdue']
                 ).select_related('member').first()
                 if loan:
+                    today = timezone.now().date()
+                    days_held = (today - loan.loan_date).days
+                    days_overdue = max(0, (today - loan.due_date).days)
                     loan.status = 'returned'
-                    loan.return_date = timezone.now().date()
+                    loan.return_date = today
                     loan.save()
-                    result = {'success': True, 'loan': loan, 'copy': copy}
+                    result = {
+                        'success': True, 'loan': loan, 'copy': copy,
+                        'days_held': days_held, 'days_overdue': days_overdue,
+                    }
                     messages.success(
                         request,
                         f'✓ Libri "{copy.book.title}" u kthye nga {loan.member.full_name()}.'
@@ -580,9 +586,9 @@ def quick_loan(request):
     if request.method == 'POST':
         form = QuickLoanForm(request.POST)
         if form.is_valid():
-            mn = form.cleaned_data['member_number'].strip().zfill(4)
-            cn = form.cleaned_data['copy_number'].strip().zfill(4)
-            days = form.cleaned_data['due_days']
+            mn = form.cleaned_data['member_number'].strip()
+            cn = form.cleaned_data['copy_number'].strip()
+            days = int(form.cleaned_data['due_days'])
             errors = []
             member = copy = None
             try:
@@ -853,6 +859,234 @@ def next_copy_number_ajax(request):
     language = request.GET.get('language', 'sq')
     cn = BookCopy.next_copy_number(language=language)
     return JsonResponse({'copy_number': cn})
+
+
+@login_required
+def member_lookup_ajax(request):
+    """AJAX: gjej anëtarin sipas membership_number — për quick_loan."""
+    mn = request.GET.get('q', '').strip()
+    if not mn:
+        return JsonResponse({'found': False})
+    try:
+        member = Member.objects.get(membership_number=mn)
+        overdue_count = member.loan_set.filter(status='overdue').count()
+        active_count  = member.loan_set.filter(status__in=['active', 'overdue']).count()
+        return JsonResponse({
+            'found': True,
+            'name': member.full_name(),
+            'number': member.membership_number,
+            'is_active': member.is_active,
+            'active_loans': active_count,
+            'overdue_loans': overdue_count,
+        })
+    except Member.DoesNotExist:
+        return JsonResponse({'found': False, 'msg': f'Anëtari [{mn}] nuk u gjet.'})
+
+
+@login_required
+def copy_lookup_ajax(request):
+    """AJAX: gjej kopjen e librit sipas copy_number — për quick_loan dhe quick_return."""
+    cn = request.GET.get('q', '').strip()
+    if not cn:
+        return JsonResponse({'found': False})
+    try:
+        copy = BookCopy.objects.select_related('book').get(copy_number=cn)
+        author = copy.book.primary_author()
+        active_loan = Loan.objects.filter(
+            copy=copy, status__in=['active', 'overdue']
+        ).select_related('member').first()
+        today = timezone.now().date()
+        data = {
+            'found': True,
+            'copy_number': copy.copy_number,
+            'title': copy.book.title,
+            'author': str(author) if author else '',
+            'shelf_label': copy.shelf_label,
+            'status': copy.status,
+            'available': copy.is_available(),
+        }
+        if active_loan:
+            days_held    = (today - active_loan.loan_date).days
+            days_overdue = max(0, (today - active_loan.due_date).days)
+            data.update({
+                'loan_member': active_loan.member.full_name(),
+                'loan_member_number': active_loan.member.membership_number,
+                'loan_date': str(active_loan.loan_date),
+                'due_date': str(active_loan.due_date),
+                'days_held': days_held,
+                'days_overdue': days_overdue,
+                'loan_status': active_loan.status,
+            })
+        return JsonResponse(data)
+    except BookCopy.DoesNotExist:
+        return JsonResponse({'found': False, 'msg': f'Kopja [{cn}] nuk u gjet.'})
+
+
+@login_required
+def mark_copy_lost(request, copy_pk):
+    """Shëno kopjen si të humbur."""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Nuk keni leje.'}, status=403)
+    copy = get_object_or_404(BookCopy, pk=copy_pk)
+    if request.method == 'POST':
+        copy.status = BookCopy.STATUS_LOST
+        copy.save()
+        active_loan = Loan.objects.filter(
+            copy=copy, status__in=['active', 'overdue']
+        ).first()
+        if active_loan:
+            active_loan.status = 'overdue'
+            active_loan.notes = (active_loan.notes or '') + ' [HUMBUR]'
+            active_loan.save()
+        messages.warning(
+            request,
+            f'Kopja [{copy.copy_number}] "{copy.book.title}" u shënua si E HUMBUR.'
+        )
+        return redirect(request.POST.get('next', 'loan_list'))
+    return render(request, 'libra/copy_lost_confirm.html', {'copy': copy})
+
+
+@login_required
+def send_overdue_reminders(request):
+    """Dërgo email rikujtues për të gjitha huazimet vonuara."""
+    if not request.user.is_staff:
+        messages.error(request, 'Nuk keni leje.')
+        return redirect('home')
+    if request.method != 'POST':
+        return redirect('loan_list')
+
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    _mark_overdue()
+    today = timezone.now().date()
+    overdue_loans = Loan.objects.filter(
+        status='overdue'
+    ).select_related('copy__book', 'member').order_by('member__last_name')
+
+    sent = 0
+    failed = 0
+    no_email = 0
+
+    for loan in overdue_loans:
+        member = loan.member
+        if not member.email:
+            no_email += 1
+            continue
+
+        days_overdue = (today - loan.due_date).days
+        book_title   = loan.copy.book.title
+        copy_nr      = loan.copy.copy_number
+        due_str      = loan.due_date.strftime('%d.%m.%Y')
+
+        # 1-year warning vs normal reminder
+        is_critical = days_overdue >= 365
+
+        if is_critical:
+            subject = f'⚠️ Biblioteka Pirok – Libër i Vonuar mbi 1 Vit / Задоцнета книга над 1 Година / Overdue Book Over 1 Year'
+            body = f"""🇦🇱 SHQIP
+================
+I/E nderuar {member.full_name()},
+
+Libri "{book_title}" (Nr. {copy_nr}) ka kaluar afatin e kthimit prej MBI 1 VITI ({days_overdue} ditë).
+Afati i kthimit ishte: {due_str}.
+
+Nëse libri nuk kthehet brenda 30 ditëve, biblioteka do të ndërmarrë hapat ligjorë të parashikuara
+në kontratën e anëtarësisë. Do t'ju kërkohet të zëvendësoni librin dhe të paguani 1,000 denarë kostot.
+
+Ju lutemi kontaktoni bibliotekën menjëherë.
+📧 pirokbiblioteka@gmail.com
+📍 Fshati Pirok, Tetovë, MK
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🇲🇰 МАКЕДОНСКИ
+================
+Почитуван/а {member.full_name()},
+
+Книгата "{book_title}" (Бр. {copy_nr}) е задоцнета ПОВЕЌЕ ОД 1 ГОДИНА ({days_overdue} дена).
+Рокот за враќање беше: {due_str}.
+
+Доколку книгата не се врати во рок од 30 дена, библиотеката ќе преземе правни чекори
+предвидени во договорот за членство. Ќе бидете обврзани да ја замените книгата и да платите 1.000 денари.
+
+Ве молиме контактирајте ја библиотеката итно.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🇬🇧 ENGLISH
+===========
+Dear {member.full_name()},
+
+The book "{book_title}" (No. {copy_nr}) is OVER 1 YEAR overdue ({days_overdue} days).
+The return deadline was: {due_str}.
+
+If the book is not returned within 30 days, the library will take legal action as provided
+in the membership agreement. You will be required to replace the book and pay 1,000 denars.
+
+Please contact the library immediately.
+
+— Biblioteka Pirok"""
+        else:
+            subject = f'Biblioteka Pirok – Rikujtim Kthimi / Потсетник / Return Reminder'
+            body = f"""🇦🇱 SHQIP
+================
+I/E nderuar {member.full_name()},
+
+Afati i kthimit të librit "{book_title}" (Nr. {copy_nr}) ka kaluar prej {days_overdue} ditësh.
+Afati i kthimit ishte: {due_str}.
+
+Ju lutemi ktheni librin sa më shpejt ose vazhdoni afatin online (maks. 2 herë) duke hyrë
+në llogarinë tuaj: https://bibliotekapirok.pythonanywhere.com/hyrje/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🇲🇰 МАКЕДОНСКИ
+================
+Почитуван/а {member.full_name()},
+
+Рокот за враќање на книгата "{book_title}" (Бр. {copy_nr}) помина пред {days_overdue} дена.
+Рокот за враќање беше: {due_str}.
+
+Ве молиме вратете ја книгата или обновете го рокот онлајн (макс. 2 пати):
+https://bibliotekapirok.pythonanywhere.com/hyrje/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🇬🇧 ENGLISH
+===========
+Dear {member.full_name()},
+
+The return deadline for "{book_title}" (No. {copy_nr}) passed {days_overdue} days ago.
+The deadline was: {due_str}.
+
+Please return the book or renew your loan online (max. 2 times):
+https://bibliotekapirok.pythonanywhere.com/hyrje/
+
+— Biblioteka Pirok"""
+
+        try:
+            send_mail(
+                subject=subject,
+                message=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[member.email],
+                fail_silently=False,
+            )
+            sent += 1
+        except Exception:
+            failed += 1
+
+    if sent:
+        messages.success(request, f'✓ U dërguan {sent} email rikujtues.')
+    if failed:
+        messages.warning(request, f'⚠ {failed} email dështuan (kontrollo konfigurimin SMTP).')
+    if no_email:
+        messages.info(request, f'{no_email} anëtarë nuk kanë email të regjistruar.')
+    if not overdue_loans.exists():
+        messages.info(request, 'Nuk ka huazime vonuara.')
+
+    return redirect('loan_list')
 
 
 @login_required

@@ -17,6 +17,7 @@ urlpatterns = [
     path('librat/<uuid:pk>/kopje/', views.book_copy_list, name='book_copy_list'),
     path('librat/<uuid:pk>/kopje/shto/', views.book_copy_add, name='book_copy_add'),
     path('kopje/<int:copy_pk>/fshi/', views.book_copy_delete, name='book_copy_delete'),
+    path('kopje/<int:copy_pk>/humbur/', views.mark_copy_lost, name='mark_copy_lost'),
 
     # AJAX
     path('ajax/autor-shto/', views.author_add_ajax, name='author_add_ajax'),
@@ -53,6 +54,7 @@ urlpatterns = [
     # Quick desk operations
     path('kthe/', views.quick_return, name='quick_return'),
     path('huazo/', views.quick_loan, name='quick_loan'),
+    path('dergoi-rikujtues/', views.send_overdue_reminders, name='send_overdue_reminders'),
 
     # Backup
     path('backup/', views.backup_download, name='backup_download'),
@@ -67,6 +69,8 @@ urlpatterns = [
     path('ajax/label-sugjero/', views.shelf_label_suggest, name='shelf_label_suggest'),
     path('ajax/next-barkod/', views.next_copy_number_ajax, name='next_copy_number_ajax'),
     path('ajax/check-barkod/', views.check_copy_number_ajax, name='check_copy_number_ajax'),
+    path('ajax/antar-kerko/', views.member_lookup_ajax, name='member_lookup_ajax'),
+    path('ajax/kopje-kerko/', views.copy_lookup_ajax, name='copy_lookup_ajax'),
     path('ajax/titulli-kontroll/', views.book_title_check, name='book_title_check'),
 
     # Staff management (superuser only)

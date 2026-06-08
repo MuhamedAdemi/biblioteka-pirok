@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Shëno si Humbur – {{ copy.copy_number }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card border-danger">
+      <div class="card-header text-danger fw-semibold">
+        <i class="bi bi-x-octagon me-2"></i>Konfirmo: Kopje e Humbur
+      </div>
+      <div class="card-body">
+        <p>A jeni i sigurt që dëshironi ta shënoni kopjen si <strong>të humbur</strong>?</p>
+        <p><strong>Kopja:</strong> <code>{{ copy.copy_number }}</code></p>
+        <p><strong>Libri:</strong> {{ copy.book.title }}</p>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.META.HTTP_REFERER|default:'/' }}">
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-x-octagon me-1"></i>Po, Shëno si Humbur
+            </button>
+            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary">Anulo</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

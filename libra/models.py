@@ -116,9 +116,17 @@ class BookAuthor(models.Model):
 
 
 class BookCopy(models.Model):
+    STATUS_OK   = 'ok'
+    STATUS_LOST = 'lost'
+    STATUS_CHOICES = [
+        ('ok',   'Mirë'),
+        ('lost', 'Humbur'),
+    ]
+
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='copies', verbose_name="Libri")
     copy_number = models.CharField(max_length=14, unique=True, verbose_name="Nr. Kopjes (Barkod)")
     shelf_label = models.CharField(max_length=12, blank=True, verbose_name="Label Rafti (p.sh. 3-00001)")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ok', verbose_name="Gjendja")
     notes = models.CharField(max_length=200, blank=True, verbose_name="Shënime")
 
     class Meta:
@@ -130,6 +138,8 @@ class BookCopy(models.Model):
         return f"[{self.copy_number}] {self.book.title}"
 
     def is_available(self):
+        if self.status == self.STATUS_LOST:
+            return False
         return not self.loan_set.filter(status__in=['active', 'overdue']).exists()
 
     @classmethod

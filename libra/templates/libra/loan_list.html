@@ -2,9 +2,21 @@
 {% block title %}Huazimet – Biblioteka Pirok{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Huazimet</h4>
-  <a href="{% url 'loan_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Huazo Libër</a>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'send_overdue_reminders' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-warning"
+              onclick="return confirm('Dërgo email rikujtues për TË GJITHA huazimet vonuara?')"
+              title="Dërgo email rikujtues tri-gjuhësh (SQ/MK/EN) për të gjithë anëtarët me libra vonuara">
+        <i class="bi bi-envelope-exclamation me-1"></i>Dërgo Rikujtues
+      </button>
+    </form>
+    <a href="{% url 'loan_add' %}" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus me-1"></i>Huazo Libër
+    </a>
+  </div>
 </div>
 
 <div class="mb-3 d-flex gap-2">
