@@ -24,19 +24,48 @@
 
       <!-- Text overlay on all slides -->
       <div class="position-absolute top-50 start-50 translate-middle text-center text-white w-100 px-3"
-           style="z-index:10; pointer-events:none">
-        <h1 class="display-4 fw-bold mb-2" style="text-shadow:0 2px 8px rgba(0,0,0,.7)">
-          Biblioteka <span style="color:#f8c94b">Pirok</span>
+           style="z-index:10;">
+        <h1 class="display-4 fw-bold mb-2" style="text-shadow:0 2px 8px rgba(0,0,0,.75)">
+          Biblioteka <span style="color:#E8702A">Pirok</span>
         </h1>
-        <p class="lead mb-4" style="text-shadow:0 1px 4px rgba(0,0,0,.8); font-size:1.2rem">
+        <p class="lead mb-4" style="text-shadow:0 1px 4px rgba(0,0,0,.8); font-size:1.15rem">
           Qendra kulturore e fshatit Pirok &mdash; Tetovë, Maqedonia e Veriut
         </p>
-        <div style="pointer-events:all">
-          <a href="{% url 'catalog' %}" class="btn btn-warning btn-lg me-2 px-4 fw-semibold">
-            <i class="bi bi-search me-2"></i>Shfleto Librat
+
+        <!-- ── SEARCH BAR ───────────────────────────── -->
+        <form action="{% url 'catalog' %}" method="get"
+              class="d-flex justify-content-center mb-3">
+          <div class="hero-search-wrap d-flex" style="max-width:520px; width:100%">
+            <input type="text" name="q"
+                   class="hero-search-input"
+                   placeholder="Kërko libra, autor, ISBN...">
+            <button type="submit" class="hero-search-btn">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick filter chips -->
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+          <a href="{% url 'catalog' %}?language=sq"
+             class="btn btn-sm rounded-pill px-3"
+             style="background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(4px)">
+            <i class="bi bi-translate me-1"></i>Shqip
           </a>
-          <a href="#anetarsimi" class="btn btn-outline-light btn-lg px-4">
-            <i class="bi bi-person-plus me-2"></i>Bëhu Anëtar
+          <a href="{% url 'catalog' %}?language=mk"
+             class="btn btn-sm rounded-pill px-3"
+             style="background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(4px)">
+            Maqedonisht
+          </a>
+          <a href="{% url 'catalog' %}?language=en"
+             class="btn btn-sm rounded-pill px-3"
+             style="background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(4px)">
+            English
+          </a>
+          <a href="#anetarsimi"
+             class="btn btn-sm rounded-pill px-3"
+             style="background:rgba(232,112,42,.85);color:white;border:none;backdrop-filter:blur(4px)">
+            <i class="bi bi-person-plus me-1"></i>Bëhu Anëtar
           </a>
         </div>
       </div>
@@ -52,7 +81,7 @@
 </div>
 
 <!-- ── STATS ──────────────────────────────────────────────────────────── -->
-<div class="bg-dark text-white py-3 mb-4">
+<div class="stats-bar bg-dark text-white py-3 mb-4">
   <div class="container">
     <div class="row text-center g-0">
       <div class="col-4 border-end border-secondary">
@@ -104,7 +133,7 @@
 
   <!-- Members -->
   <div class="col-md-4">
-    <div class="card h-100 border-0 shadow-sm border-top border-4 border-warning">
+    <div class="card h-100 border-0 shadow-sm card-accent-top">
       <div class="card-body text-center p-4">
         <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
              style="width:70px;height:70px">
@@ -309,5 +338,36 @@
 
 <style>
 .carousel-item img { transition: filter .3s ease; }
+
+/* Hero search bar */
+.hero-search-input {
+  flex: 1;
+  border: none;
+  border-radius: 50px 0 0 50px;
+  padding: .65rem 1.3rem;
+  font-size: 1rem;
+  outline: none;
+  background: rgba(255,255,255,.95);
+  color: #1C1C1E;
+}
+.hero-search-input::placeholder { color: #9A9A9E; }
+.hero-search-btn {
+  background: #E8702A;
+  border: none;
+  border-radius: 0 50px 50px 0;
+  padding: .65rem 1.3rem;
+  color: white;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.hero-search-btn:hover { background: #d4611e; }
+
+/* Stats bar color tweak */
+.stats-bar { background: #1A3558 !important; }
+.stats-bar .text-warning { color: #E8702A !important; }
+
+/* Service cards border-top accent */
+.card-accent-top { border-top: 4px solid #E8702A !important; }
 </style>
 {% endblock %}

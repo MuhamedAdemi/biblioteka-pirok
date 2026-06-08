@@ -42,6 +42,7 @@ urlpatterns = [
     path('anetaret/<uuid:pk>/', views.member_detail, name='member_detail'),
     path('anetaret/<uuid:pk>/ndrysho/', views.member_edit, name='member_edit'),
     path('anetaret/<uuid:pk>/llogari/', views.member_create_account, name='member_create_account'),
+    path('anetaret/<uuid:pk>/id-karte/', views.member_id_card, name='member_id_card'),
 
     # Loans
     path('huazime/', views.loan_list, name='loan_list'),
@@ -65,6 +66,7 @@ urlpatterns = [
     path('ajax/kategori-shto/', views.subject_add_ajax, name='subject_add_ajax'),
     path('ajax/label-sugjero/', views.shelf_label_suggest, name='shelf_label_suggest'),
     path('ajax/next-barkod/', views.next_copy_number_ajax, name='next_copy_number_ajax'),
+    path('ajax/check-barkod/', views.check_copy_number_ajax, name='check_copy_number_ajax'),
     path('ajax/titulli-kontroll/', views.book_title_check, name='book_title_check'),
 
     # Staff management (superuser only)

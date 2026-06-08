@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Book, Author, Publisher, Member, Loan, Subject, BookAuthor, BookCopy
+from .models import Book, Author, Publisher, Member, Loan, Subject, BookAuthor, BookCopy, BarcodeLog
 from .forms import (
     BookForm, BookAuthorFormSet, BookCopyForm,
     MemberForm, LoanForm, LoanReturnForm,
@@ -275,11 +275,16 @@ def book_copy_add(request, pk):
             messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
             return redirect('book_copy_list', pk=pk)
     else:
+        suggested = BookCopy.suggest_copy_number_dewey(book.class_number)
         form = BookCopyForm(initial={
-            'copy_number': BookCopy.next_copy_number(language=book.language),
+            'copy_number': suggested,
             'shelf_label': BookCopy.suggest_shelf_label(book.class_number),
         })
-    return render(request, 'libra/book_copy_form.html', {'form': form, 'book': book})
+    return render(request, 'libra/book_copy_form.html', {
+        'form': form,
+        'book': book,
+        'class_number': book.class_number,
+    })
 
 
 @login_required
@@ -723,23 +728,41 @@ def barcode_sheet(request):
         return redirect('home')
 
     language = request.GET.get('language', '')
-    count = max(1, min(int(request.GET.get('count', 560)), 560))
+    count_raw = request.GET.get('count', '560')
+    try:
+        count = max(1, min(int(count_raw), 560))
+    except (ValueError, TypeError):
+        count = 56
 
     if language:
         prefix = Book.LANGUAGE_PREFIX.get(language, '401')
-        last = BookCopy.objects.filter(
+
+        # Start from max(last BookCopy, last BarcodeLog) to avoid duplicates
+        start_num = 1
+        last_copy = BookCopy.objects.filter(
             copy_number__startswith=f'{prefix}-'
         ).order_by('-copy_number').first()
-        if last:
+        if last_copy:
             try:
-                start_num = int(last.copy_number.split('-')[1]) + 1
+                start_num = max(start_num, int(last_copy.copy_number.split('-')[1]) + 1)
             except (ValueError, IndexError):
-                start_num = 1
-        else:
-            start_num = 1
+                pass
+        last_log = BarcodeLog.objects.filter(prefix=prefix).order_by('-to_number').first()
+        if last_log:
+            start_num = max(start_num, last_log.to_number + 1)
 
         barcodes = [f"{prefix}-{str(start_num + i).zfill(5)}" for i in range(count)]
         pages = [barcodes[i:i + 56] for i in range(0, len(barcodes), 56)]
+
+        # Log this generation
+        BarcodeLog.objects.create(
+            language=language,
+            prefix=prefix,
+            from_number=start_num,
+            to_number=start_num + count - 1,
+            count=count,
+            generated_by=request.user,
+        )
 
         return render(request, 'libra/barcode_sheet_print.html', {
             'pages': pages,
@@ -753,8 +776,17 @@ def barcode_sheet(request):
         (code, label, Book.LANGUAGE_PREFIX.get(code, '401'))
         for code, label in Book.LANGUAGE_CHOICES
     ]
+
+    # Show last log per prefix for the selection form
+    recent_logs = {}
+    for code, _label, prefix in lang_choices_with_prefix:
+        log = BarcodeLog.objects.filter(prefix=prefix).order_by('-generated_at').first()
+        if log:
+            recent_logs[code] = log
+
     return render(request, 'libra/barcode_sheet.html', {
         'lang_choices_with_prefix': lang_choices_with_prefix,
+        'recent_logs': recent_logs,
     })
 
 
@@ -821,6 +853,26 @@ def next_copy_number_ajax(request):
     language = request.GET.get('language', 'sq')
     cn = BookCopy.next_copy_number(language=language)
     return JsonResponse({'copy_number': cn})
+
+
+@login_required
+def check_copy_number_ajax(request):
+    """AJAX: kontrollo nëse copy_number ekziston tashmë (për validim real-time)."""
+    copy_number = request.GET.get('copy_number', '').strip()
+    if not copy_number:
+        return JsonResponse({'exists': False, 'copy_number': ''})
+    exists = BookCopy.objects.filter(copy_number=copy_number).exists()
+    return JsonResponse({'exists': exists, 'copy_number': copy_number})
+
+
+@login_required
+def member_id_card(request, pk):
+    """Printo kartën e anëtarit me dimensionet e kartës ID (85.6×54mm)."""
+    if not request.user.is_staff:
+        messages.error(request, 'Nuk keni leje.')
+        return redirect('home')
+    member = get_object_or_404(Member, pk=pk)
+    return render(request, 'libra/member_id_card.html', {'member': member})
 
 
 @login_required

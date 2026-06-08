@@ -169,6 +169,32 @@ class BookCopy(models.Model):
             num = 1
         return f"{prefix}-{str(num).zfill(5)}"
 
+    @classmethod
+    def suggest_copy_number_dewey(cls, class_number=''):
+        """Sugjero copy_number bazuar në Dewey (p.sh. 334.12 → 334-00001)."""
+        if not class_number:
+            return ''
+        import re
+        match = re.match(r'(\d+)', class_number.strip())
+        if not match:
+            return ''
+        raw = match.group(1)[:3]
+        prefix = raw.ljust(3, '0')
+        num = 0
+        last_cn = cls.objects.filter(copy_number__startswith=f'{prefix}-').order_by('-copy_number').first()
+        if last_cn:
+            try:
+                num = max(num, int(last_cn.copy_number.split('-')[1]))
+            except (ValueError, IndexError):
+                pass
+        last_sl = cls.objects.filter(shelf_label__startswith=f'{prefix}-').order_by('-shelf_label').first()
+        if last_sl:
+            try:
+                num = max(num, int(last_sl.shelf_label.split('-')[1]))
+            except (ValueError, IndexError):
+                pass
+        return f"{prefix}-{str(num + 1).zfill(5)}"
+
 
 class Member(models.Model):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
@@ -229,3 +255,25 @@ class Loan(models.Model):
 
     def can_renew(self):
         return self.status in ['active', 'overdue'] and self.renewals_count < 2
+
+
+class BarcodeLog(models.Model):
+    """Regjistron çdo gjenerim flete barkodesh për të shmangur dublikime."""
+    language = models.CharField(max_length=10, verbose_name="Gjuha")
+    prefix = models.CharField(max_length=5, verbose_name="Prefiksi")
+    from_number = models.IntegerField(verbose_name="Nga Nr.")
+    to_number = models.IntegerField(verbose_name="Deri Nr.")
+    count = models.IntegerField(verbose_name="Sasia")
+    generated_at = models.DateTimeField(auto_now_add=True, verbose_name="Gjeneruar më")
+    generated_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        verbose_name="Gjeneruar nga"
+    )
+
+    class Meta:
+        ordering = ['-generated_at']
+        verbose_name = "Log Barkodesh"
+        verbose_name_plural = "Log-et e Barkodeve"
+
+    def __str__(self):
+        return f"{self.prefix}: {str(self.from_number).zfill(5)}–{str(self.to_number).zfill(5)} ({self.generated_at.strftime('%d.%m.%Y')})"

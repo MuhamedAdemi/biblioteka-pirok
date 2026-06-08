@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <title>Karta e Anëtarit – {{ member.full_name }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f0f0f0;
+    }
+
+    /* ── Print styles ────────────────────────────── */
+    @page {
+      size: A4 portrait;
+      margin: 12mm 10mm;
+    }
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .page { box-shadow: none; margin: 0; padding: 0; background: white; }
+    }
+
+    /* ── Screen preview ──────────────────────────── */
+    .no-print {
+      text-align: center;
+      padding: 20px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    .no-print h5 { margin-bottom: 10px; color: #1A3558; }
+    .no-print .btn {
+      display: inline-block; padding: 8px 24px; margin: 4px;
+      background: #1A3558; color: white; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
+      text-decoration: none;
+    }
+    .no-print .btn-outline {
+      background: transparent; color: #1A3558; border: 1px solid #1A3558;
+    }
+    .hint {
+      font-size: 11px; color: #888; margin-top: 8px;
+    }
+
+    /* ── Card sheet ──────────────────────────────── */
+    .page {
+      width: 190mm;
+      margin: 0 auto;
+      background: white;
+      padding: 5mm;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5mm;
+    }
+
+    /* ── Single card: 85.6mm × 54mm (ISO 7810) ───── */
+    .id-card {
+      width: 85.6mm;
+      height: 54mm;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 3mm;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Top stripe */
+    .card-header-stripe {
+      background: #1A3558;
+      padding: 2.5mm 3mm 2mm;
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+    }
+    .card-header-stripe .lib-name {
+      color: white;
+      font-size: 6.5pt;
+      font-weight: bold;
+      letter-spacing: 0.3pt;
+      line-height: 1.2;
+    }
+    .card-header-stripe .lib-sub {
+      color: rgba(255,255,255,0.7);
+      font-size: 5pt;
+    }
+    .card-header-stripe .badge-aktiv {
+      margin-left: auto;
+      background: #E8702A;
+      color: white;
+      font-size: 5.5pt;
+      font-weight: bold;
+      padding: 1mm 2mm;
+      border-radius: 1.5mm;
+    }
+
+    /* Card body */
+    .card-body {
+      flex: 1;
+      display: flex;
+      gap: 2.5mm;
+      padding: 2mm 3mm 1.5mm;
+    }
+
+    /* Avatar circle */
+    .card-avatar {
+      width: 14mm;
+      height: 14mm;
+      border-radius: 50%;
+      background: #1A3558;
+      color: white;
+      font-size: 8pt;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: 0.5pt;
+    }
+
+    /* Info block */
+    .card-info {
+      flex: 1;
+    }
+    .card-info .name {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #1C1C1E;
+      line-height: 1.3;
+    }
+    .card-info .nr {
+      font-size: 6.5pt;
+      color: #555;
+      margin-top: 1mm;
+    }
+    .card-info .nr span {
+      font-weight: bold;
+      color: #1A3558;
+    }
+    .card-info .date {
+      font-size: 5.5pt;
+      color: #888;
+      margin-top: 0.8mm;
+    }
+
+    /* Bottom barcode strip */
+    .card-barcode {
+      border-top: 0.5pt solid #e5e5e5;
+      padding: 1mm 3mm 1.5mm;
+      text-align: center;
+      background: #FAFAFA;
+    }
+    .card-barcode svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 75mm;
+      height: 10mm;
+    }
+
+    /* Cut guide (screen only) */
+    @media screen {
+      .id-card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        margin: 3mm;
+      }
+      .card-grid {
+        padding: 5mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Controls (screen only) ─────────────────────────── -->
+<div class="no-print">
+  <h5>&#128196; Karta e Anëtarit – {{ member.full_name }}</h5>
+  <p class="hint">Faqja shfaq 2 kartë për rresht (të njëjta, për rezervë). Prieto pas printimit.</p>
+  <button class="btn" onclick="window.print()">&#128424; Printo Kartën</button>
+  <a href="{% url 'member_detail' member.pk %}" class="btn btn-outline">&#8592; Kthehu</a>
+  <p class="hint" style="margin-top:8px">Dimensione: 85.6 × 54 mm &nbsp;|&nbsp; Lamino pas printimit për qëndrueshmëri</p>
+</div>
+
+<!-- ── Card sheet ──────────────────────────────────────── -->
+<div class="page">
+  <div class="card-grid">
+
+    {% for i in "12" %}
+    <div class="id-card">
+
+      <!-- Top stripe -->
+      <div class="card-header-stripe">
+        <div>
+          <div class="lib-name">&#128218; BIBLIOTEKA PIROK</div>
+          <div class="lib-sub">Fshati Pirok, Tetovë, MK</div>
+        </div>
+        {% if member.is_active %}
+        <div class="badge-aktiv">AKTIV</div>
+        {% endif %}
+      </div>
+
+      <!-- Body -->
+      <div class="card-body">
+        <div class="card-avatar">
+          {{ member.first_name|slice:":1"|upper }}{{ member.last_name|slice:":1"|upper }}
+        </div>
+        <div class="card-info">
+          <div class="name">{{ member.last_name|upper }}, {{ member.first_name }}</div>
+          <div class="nr">Nr. Anëtarësie: <span>{{ member.membership_number }}</span></div>
+          <div class="date">Anëtar që: {{ member.membership_date|date:"d.m.Y" }}</div>
+          {% if member.phone %}
+          <div class="date">&#128222; {{ member.phone }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Barcode -->
+      <div class="card-barcode">
+        <svg class="barcode-{{ forloop.counter }}"></svg>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('[class^="barcode-"]').forEach(function(el) {
+  JsBarcode(el, "{{ member.membership_number }}", {
+    format: "CODE128",
+    width: 1.4,
+    height: 28,
+    displayValue: true,
+    text: "{{ member.membership_number }}",
+    fontSize: 9,
+    margin: 2,
+    background: "#FAFAFA",
+    lineColor: "#1A3558"
+  });
+});
+window.addEventListener('load', function() {
+  // small delay to let JsBarcode render before print dialog
+  document.querySelector('.no-print button').addEventListener('click', function() {
+    setTimeout(function(){ window.print(); }, 100);
+  });
+});
+</script>
+</body>
+</html>

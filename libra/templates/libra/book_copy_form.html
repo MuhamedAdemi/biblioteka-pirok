@@ -3,34 +3,167 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-5">
-    <h5 class="mb-3"><i class="bi bi-upc me-2"></i>Shto Kopje Fizike</h5>
-    <p class="text-muted small">Libri: <strong>{{ book.title }}</strong></p>
+  <div class="col-md-6">
+    <h5 class="mb-1"><i class="bi bi-upc me-2"></i>Shto Kopje Fizike</h5>
+    <p class="text-muted small mb-3">
+      Libri: <strong>{{ book.title }}</strong>
+      {% if class_number %} &nbsp;·&nbsp; Nr. Klasifikimi: <code>{{ class_number }}</code>{% endif %}
+    </p>
+
     <div class="card">
       <div class="card-body">
-        <form method="post">
+        <form method="post" id="copy-form">
           {% csrf_token %}
+
+          <!-- ── Copy Number (barcode) ─────────────────── -->
           <div class="mb-3">
-            <label class="form-label fw-semibold">{{ form.copy_number.label }} <span class="text-danger">*</span></label>
-            {{ form.copy_number }}
-            <small class="text-muted d-block mt-1">Numri unik (barkod) — ngjitet mbi kapak prapa. Skanueshem.</small>
+            <label class="form-label fw-semibold">
+              {{ form.copy_number.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              {{ form.copy_number }}
+              {% if class_number %}
+              <button type="button" class="btn btn-outline-secondary" id="btn-dewey-suggest"
+                      title="Auto-gjenero nga Dewey">
+                <i class="bi bi-magic me-1"></i>Auto
+              </button>
+              {% endif %}
+            </div>
+
+            <!-- Validation feedback -->
+            <div id="cn-feedback" class="mt-1" style="font-size:.82rem"></div>
+            <small class="text-muted d-block mt-1">
+              Format sugjeruar: <code>{{ class_number|slice:":3" }}-XXXXX</code> (Dewey + nr rendor)
+              &nbsp;·&nbsp; Ose skanoni barkod-in me scanner.
+            </small>
           </div>
+
+          <!-- ── Shelf Label ──────────────────────────── -->
           <div class="mb-3">
             <label class="form-label fw-semibold">{{ form.shelf_label.label }}</label>
             {{ form.shelf_label }}
-            <small class="text-muted d-block mt-1">Label i raftit — ngjitet kapakut poshtë-mes. Format: <code>320-00001</code> (3 shifra Dewey + nr rendor)</small>
+            <small class="text-muted d-block mt-1">
+              Label spina rafti — p.sh. <code>320-00001</code>
+            </small>
           </div>
+
+          <!-- ── Notes ───────────────────────────────── -->
           <div class="mb-3">
             <label class="form-label">{{ form.notes.label }}</label>
             {{ form.notes }}
           </div>
+
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-check me-1"></i>Shto</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit">
+              <i class="bi bi-check me-1"></i>Shto Kopjen
+            </button>
             <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-outline-secondary">Anulo</a>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- ── Legend ─────────────────────────────────── -->
+    <div class="card mt-3 border-0 bg-light">
+      <div class="card-body py-2 px-3">
+        <small class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Si funksionon:</strong> Nëse keni barkod të printuar paraprakisht, skanojeni —
+          fusha mbushet automatikisht dhe sistemi kontrollon nëse numri ekziston.
+          Nëse nuk keni barkod, klikoni <strong>Auto</strong> për numër nga Dewey.
+        </small>
+      </div>
+    </div>
   </div>
 </div>
+
+<script>
+(function() {
+  const cnInput = document.getElementById('{{ form.copy_number.id_for_label }}');
+  const feedback = document.getElementById('cn-feedback');
+  const btnSubmit = document.getElementById('btn-submit');
+  const btnDewey = document.getElementById('btn-dewey-suggest');
+  const checkUrl = '{% url "check_copy_number_ajax" %}';
+  const deweyUrl = '{% url "shelf_label_suggest" %}';
+  let checkTimer = null;
+  let lastChecked = '';
+  let isDuplicate = false;
+
+  function setFeedback(exists, value) {
+    if (!value) {
+      feedback.innerHTML = '';
+      isDuplicate = false;
+      btnSubmit.disabled = false;
+      return;
+    }
+    if (exists) {
+      feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>' +
+        'Ky numër <strong>' + value + '</strong> është tashmë i regjistruar! Zgjidhni numër tjetër.</span>';
+      isDuplicate = true;
+      btnSubmit.disabled = true;
+    } else {
+      feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>' +
+        'Numri <strong>' + value + '</strong> është i disponueshëm.</span>';
+      isDuplicate = false;
+      btnSubmit.disabled = false;
+    }
+  }
+
+  function checkCopyNumber(value) {
+    if (!value || value === lastChecked) return;
+    lastChecked = value;
+    fetch(checkUrl + '?copy_number=' + encodeURIComponent(value))
+      .then(r => r.json())
+      .then(data => setFeedback(data.exists, data.copy_number))
+      .catch(() => {});
+  }
+
+  cnInput.addEventListener('input', function() {
+    clearTimeout(checkTimer);
+    const val = this.value.trim();
+    if (!val) { setFeedback(false, ''); return; }
+    feedback.innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split me-1"></i>Duke kontrolluar...</span>';
+    checkTimer = setTimeout(() => checkCopyNumber(val), 400);
+  });
+
+  // Check immediately if field already has a value on load
+  if (cnInput.value.trim()) {
+    checkCopyNumber(cnInput.value.trim());
+  }
+
+  // Auto-suggest button (Dewey)
+  {% if class_number %}
+  if (btnDewey) {
+    btnDewey.addEventListener('click', function() {
+      btnDewey.disabled = true;
+      btnDewey.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+      fetch(deweyUrl + '?class_number={{ class_number|urlencode }}')
+        .then(r => r.json())
+        .then(data => {
+          if (data.shelf_label) {
+            cnInput.value = data.shelf_label;
+            lastChecked = '';
+            checkCopyNumber(data.shelf_label);
+          }
+          btnDewey.disabled = false;
+          btnDewey.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
+        })
+        .catch(() => {
+          btnDewey.disabled = false;
+          btnDewey.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
+        });
+    });
+  }
+  {% endif %}
+
+  // Block form submit if duplicate
+  document.getElementById('copy-form').addEventListener('submit', function(e) {
+    if (isDuplicate) {
+      e.preventDefault();
+      feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+})();
+</script>
 {% endblock %}

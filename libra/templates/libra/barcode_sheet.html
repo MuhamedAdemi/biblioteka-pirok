@@ -3,10 +3,51 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-6">
-    <h4 class="mb-1"><i class="bi bi-upc-scan me-2 text-primary"></i>Gjenero Fletë Barkodesh</h4>
+  <div class="col-md-7 col-lg-6">
+    <h4 class="mb-1"><i class="bi bi-upc-scan me-2" style="color:var(--lib-blue)"></i>Gjenero Fletë Barkodesh</h4>
     <p class="text-muted mb-4">56 barkode/faqe · 10 faqe = 560 total · Dimensionet: 5 cm × 2 cm</p>
 
+    <!-- ── Historia e gjenerimeve ─────────────────── -->
+    {% if recent_logs %}
+    <div class="card mb-4" style="border-left:4px solid var(--lib-orange) !important">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi bi-clock-history" style="color:var(--lib-orange)"></i>
+          <strong style="font-size:.88rem">Gjenimet e fundit (kujdes dublikateve!)</strong>
+        </div>
+        <table class="table table-sm table-borderless mb-0" style="font-size:.82rem">
+          <thead>
+            <tr class="text-muted">
+              <th>Gjuha</th><th>Prefiksi</th><th>Nga Nr.</th><th>Deri Nr.</th><th>Sasia</th><th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for code, log in recent_logs.items %}
+            <tr>
+              <td>
+                {% if code == 'sq' %}<span class="lang-badge lang-sq">SQ</span>
+                {% elif code == 'mk' %}<span class="lang-badge lang-mk">MK</span>
+                {% elif code == 'en' %}<span class="lang-badge lang-en">EN</span>
+                {% else %}<span class="lang-badge lang-other">?</span>{% endif %}
+              </td>
+              <td><code>{{ log.prefix }}</code></td>
+              <td><code>{{ log.prefix }}-{{ log.from_number|stringformat:"05d" }}</code></td>
+              <td><code>{{ log.prefix }}-{{ log.to_number|stringformat:"05d" }}</code></td>
+              <td>{{ log.count }}</td>
+              <td class="text-muted">{{ log.generated_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <small class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          Gjenerimi i ri fillon automatikisht pas numrit të fundit të printuar.
+        </small>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Forma e gjenerimit ──────────────────────── -->
     <div class="card">
       <div class="card-body">
         <form method="get" action="">
@@ -19,12 +60,12 @@
                 <label class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
                        for="lang_{{ code }}">
                   <span><i class="bi bi-translate me-2"></i>{{ label }}</span>
-                  <span class="badge bg-dark">{{ prefix }}</span>
+                  <span class="badge bg-secondary">{{ prefix }}</span>
                 </label>
               </div>
               {% endfor %}
             </div>
-            <small class="text-muted mt-2 d-block">Prefiks: Shqip=101, Maqedonisht=201, Anglisht=301, Tjera=401</small>
+            <small class="text-muted mt-2 d-block">Shqip=101 · Maqedonisht=201 · Anglisht=301 · Tjera=401</small>
           </div>
 
           <div class="mb-4">
@@ -45,14 +86,14 @@
             </div>
           </div>
 
-          <div class="alert alert-info py-2 small mb-4">
-            <i class="bi bi-info-circle me-1"></i>
-            Numrat do të fillojnë nga <strong>numri i ardhshëm i disponueshëm</strong> në bazën e të dhënave.
-            Barkodeve do t'u ngjiten librave pas printimit — pastaj skanoni për regjistrim.
+          <div class="alert py-2 small mb-4" style="background:#EEF2FF;color:var(--lib-blue)">
+            <i class="bi bi-shield-check me-1"></i>
+            Numrat fillojnë nga <strong>numri vijues</strong> bazuar në të dhënat e librave
+            <strong>dhe</strong> historikun e printimit. Nuk ka rrezik dublikatesh.
           </div>
 
           <div class="d-grid">
-            <button type="submit" class="btn btn-primary btn-lg">
+            <button type="submit" class="btn btn-lg" style="background:var(--lib-blue);color:white">
               <i class="bi bi-printer me-2"></i>Gjenero dhe Printo
             </button>
           </div>
@@ -64,9 +105,10 @@
       <h6 class="text-muted">Si funksionon?</h6>
       <ol class="text-muted small lh-lg">
         <li>Zgjidhni gjuhën dhe sasinë → klikoni <strong>Gjenero</strong></li>
-        <li>Hapet faqja e printimit — printoni direkt nga browseri (Ctrl+P)</li>
+        <li>Hapet faqja e printimit — printoni me Ctrl+P (dimensione: 5×2 cm, 56/faqe)</li>
+        <li>Gjenerimi <strong>regjistrohet automatikisht</strong> — herën tjetër fillon nga numri vijues</li>
         <li>Ngjitni barkod-et mbi kapakun e librave</li>
-        <li>Kur regjistroni kopje libri, skanoni barkod-in → fusha mbushet automatikisht</li>
+        <li>Kur shtoni kopje libri, skanoni barkod-in → fusha mbushet dhe kontrollohet automatikisht</li>
       </ol>
     </div>
   </div>

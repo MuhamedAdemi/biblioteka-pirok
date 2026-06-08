@@ -7,48 +7,267 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f4f6f9; }
-    .navbar { border-bottom: 3px solid #f8c94b; }
-    .navbar-brand { font-weight: 700; letter-spacing: 1px; }
-    .sidebar { min-height: calc(100vh - 56px); background: #fff; border-right: 1px solid #e3e8ef; }
+    /* ── Design tokens ─────────────────────────────────── */
+    :root {
+      --lib-blue:    #1A3558;   /* primary – deep navy */
+      --lib-blue2:   #244a78;   /* hover / lighter navy */
+      --lib-orange:  #E8702A;   /* accent – Claude orange */
+      --lib-orange2: #d4611e;   /* hover orange */
+      --lib-bg:      #F2F2F7;   /* iOS-style background */
+      --lib-surface: #FFFFFF;
+      --lib-text:    #1C1C1E;
+      --lib-text2:   #636366;
+      --lib-border:  #D1D1D6;
+      --lib-radius:  10px;
+    }
+
+    /* ── Base ──────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      background: var(--lib-bg);
+      color: var(--lib-text);
+      font-size: .935rem;
+    }
+
+    /* ── Navbar ────────────────────────────────────────── */
+    .navbar {
+      background: var(--lib-blue) !important;
+      border-bottom: 3px solid var(--lib-orange);
+      padding: .55rem 1.25rem;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: .5px;
+      color: white !important;
+    }
+    .navbar-brand .brand-dot {
+      color: var(--lib-orange);
+    }
+    .navbar .nav-link {
+      color: rgba(255,255,255,.82) !important;
+      font-size: .88rem;
+      padding: .3rem .65rem !important;
+      border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .navbar .nav-link:hover { color: #fff !important; background: rgba(255,255,255,.1); }
+    .navbar-toggler { border-color: rgba(255,255,255,.3); }
+    .navbar-toggler-icon { filter: brightness(2); }
+
+    /* Sidebar toggle button (mobile) */
+    #sidebar-toggle {
+      background: rgba(255,255,255,.12);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    #sidebar-toggle:hover { background: rgba(255,255,255,.22); }
+
+    /* Action buttons in navbar */
+    .navbar .btn-nav-action {
+      font-size: .8rem;
+      padding: .28rem .8rem;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── Sidebar (desktop) ─────────────────────────────── */
+    .sidebar {
+      min-height: calc(100vh - 60px);
+      background: var(--lib-surface);
+      border-right: 1px solid var(--lib-border);
+      padding: 1rem .75rem .75rem;
+    }
+    .sidebar .section-label {
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: #AEAEB2;
+      padding: .7rem .5rem .2rem;
+    }
     .sidebar .nav-link {
-      color: #495057; padding: .45rem 1rem; border-radius: .375rem; font-size:.92rem;
-      border-left: 3px solid transparent;
-      transition: background .15s, color .15s, border-color .15s;
+      color: var(--lib-text);
+      padding: .42rem .65rem;
+      border-radius: 8px;
+      font-size: .88rem;
+      border-left: 2.5px solid transparent;
+      transition: background .13s, color .13s, border-color .13s;
+      display: flex;
+      align-items: center;
     }
-    .sidebar .nav-link:hover { background: #f0f4ff; color: #0d6efd; border-left-color: #b8c8f8; }
-    .sidebar .nav-link.active { background: #eef2ff !important; color: #0d6efd !important; font-weight: 600; border-left-color: #0d6efd; }
-    .sidebar .nav-link i { width: 20px; }
-    .sidebar .section-label { font-size:.72rem; font-weight:700; text-transform:uppercase;
-                               letter-spacing:.6px; color:#adb5bd; padding:.6rem 1rem .2rem; }
-    .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,.08); border-radius: .6rem !important; }
-    .card-header { font-weight: 600; }
+    .sidebar .nav-link i { width: 18px; flex-shrink: 0; }
+    .sidebar .nav-link:hover {
+      background: #EEF2FF;
+      color: var(--lib-blue);
+      border-left-color: #b8c8f8;
+    }
+    .sidebar .nav-link.active {
+      background: #E8EDF8 !important;
+      color: var(--lib-blue) !important;
+      font-weight: 600;
+      border-left-color: var(--lib-blue);
+    }
+
+    /* ── Offcanvas sidebar (mobile) ────────────────────── */
+    .offcanvas-start { width: 270px !important; }
+    #sidebarOffcanvas .offcanvas-header {
+      background: var(--lib-blue);
+      color: white;
+      padding: .85rem 1rem;
+    }
+    #sidebarOffcanvas .offcanvas-header .btn-close { filter: brightness(3); }
+    #sidebarOffcanvas .offcanvas-body { padding: .75rem; }
+    #sidebarOffcanvas .section-label {
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: #AEAEB2;
+      padding: .7rem .5rem .2rem;
+    }
+    #sidebarOffcanvas .nav-link {
+      color: var(--lib-text);
+      padding: .45rem .7rem;
+      border-radius: 8px;
+      font-size: .9rem;
+      border-left: 2.5px solid transparent;
+      transition: background .13s, color .13s;
+      display: flex;
+      align-items: center;
+    }
+    #sidebarOffcanvas .nav-link i { width: 20px; flex-shrink: 0; }
+    #sidebarOffcanvas .nav-link:hover {
+      background: #EEF2FF;
+      color: var(--lib-blue);
+      border-left-color: #b8c8f8;
+    }
+    #sidebarOffcanvas .nav-link.active {
+      background: #E8EDF8 !important;
+      color: var(--lib-blue) !important;
+      font-weight: 600;
+      border-left-color: var(--lib-blue);
+    }
+
+    /* ── Cards ─────────────────────────────────────────── */
+    .card {
+      border: none !important;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07), 0 2px 12px rgba(0,0,0,.04);
+      border-radius: var(--lib-radius) !important;
+    }
+    .card-header {
+      font-weight: 600;
+      background: var(--lib-surface) !important;
+      border-bottom: 1px solid var(--lib-border) !important;
+      border-radius: var(--lib-radius) var(--lib-radius) 0 0 !important;
+    }
     .stat-card { border-left: 4px solid; }
-    .table th { background: #f1f3f5; font-weight:600; font-size:.82rem; text-transform:uppercase; letter-spacing:.4px; color:#495057; }
-    .badge-available { background:#d1fae5; color:#065f46; }
-    .badge-unavailable { background:#fee2e2; color:#991b1b; }
-    .quick-btn { font-size:1.05rem; padding:.6rem 1.2rem; }
-    .member-avatar {
-      width:32px; height:32px; border-radius:50%; flex-shrink:0;
-      background:#eef2ff; color:#0d6efd; font-size:.75rem; font-weight:700;
-      display:inline-flex; align-items:center; justify-content:center;
+
+    /* ── Tables ─────────────────────────────────────────── */
+    .table th {
+      background: #F5F5F7;
+      font-weight: 600;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--lib-text2);
     }
-    .lang-badge { font-size:.68rem; padding:2px 5px; border-radius:4px; font-weight:700; vertical-align:middle; }
-    .lang-sq { background:#cfe2ff; color:#084298; }
-    .lang-mk { background:#f8d7da; color:#842029; }
-    .lang-en { background:#d1e7dd; color:#0a3622; }
-    .lang-other { background:#e2e3e5; color:#41464b; }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn-primary {
+      background: var(--lib-blue) !important;
+      border-color: var(--lib-blue) !important;
+    }
+    .btn-primary:hover { background: var(--lib-blue2) !important; border-color: var(--lib-blue2) !important; }
+    .btn-accent {
+      background: var(--lib-orange) !important;
+      border-color: var(--lib-orange) !important;
+      color: white !important;
+    }
+    .btn-accent:hover { background: var(--lib-orange2) !important; border-color: var(--lib-orange2) !important; }
+    .btn-outline-primary {
+      color: var(--lib-blue) !important;
+      border-color: var(--lib-blue) !important;
+    }
+    .btn-outline-primary:hover {
+      background: var(--lib-blue) !important;
+      color: white !important;
+    }
+
+    /* ── Badges ──────────────────────────────────────────── */
+    .badge-available   { background: #D1FAE5; color: #065F46; }
+    .badge-unavailable { background: #FEE2E2; color: #991B1B; }
+
+    .lang-badge { font-size: .66rem; padding: 2px 5px; border-radius: 4px; font-weight: 700; vertical-align: middle; }
+    .lang-sq    { background: #DBEAFE; color: #1E40AF; }
+    .lang-mk    { background: #FCE7F3; color: #9D174D; }
+    .lang-en    { background: #D1FAE5; color: #065F46; }
+    .lang-other { background: #E5E7EB; color: #374151; }
+
+    /* ── Member avatar ───────────────────────────────────── */
+    .member-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%; flex-shrink: 0;
+      background: #E8EDF8; color: var(--lib-blue);
+      font-size: .72rem; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Quick action buttons ────────────────────────────── */
+    .quick-btn {
+      font-size: .95rem;
+      padding: .55rem 1.1rem;
+      border-radius: 10px;
+    }
+
+    /* ── Form controls ───────────────────────────────────── */
+    .form-control:focus, .form-select:focus {
+      border-color: var(--lib-blue);
+      box-shadow: 0 0 0 .2rem rgba(26,53,88,.15);
+    }
+
+    /* ── Alerts ──────────────────────────────────────────── */
+    .alert { border-radius: var(--lib-radius); border: none; }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    .lib-footer {
+      background: var(--lib-blue);
+      color: rgba(255,255,255,.8);
+      margin-top: 3rem;
+      padding: 2rem 0 1.5rem;
+      font-size: .85rem;
+    }
+    .lib-footer strong { color: white; }
+    .lib-footer .text-muted { color: rgba(255,255,255,.55) !important; }
+    .lib-footer a { color: rgba(255,255,255,.75); }
+    .lib-footer a:hover { color: white; }
+    .lib-footer .footer-divider { border-color: rgba(255,255,255,.15); }
   </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-  <a class="navbar-brand" href="{% url 'home' %}">
-    <i class="bi bi-book-half me-2"></i>Biblioteka Pirok
-  </a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navTop">
+<!-- ── NAVBAR ──────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg">
+  <div class="d-flex align-items-center gap-2">
+    {% if user.is_authenticated %}
+    <button id="sidebar-toggle" class="d-lg-none"
+            data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Menu">
+      <i class="bi bi-list"></i>
+    </button>
+    {% endif %}
+    <a class="navbar-brand" href="{% url 'home' %}">
+      <i class="bi bi-book-half me-2" style="color:var(--lib-orange)"></i>Biblioteka<span class="brand-dot">·</span>Pirok
+    </a>
+  </div>
+
+  <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navTop">
     <span class="navbar-toggler-icon"></span>
   </button>
+
   <div class="collapse navbar-collapse" id="navTop">
     <ul class="navbar-nav ms-auto align-items-center gap-1">
       <li class="nav-item">
@@ -57,15 +276,17 @@
       <li class="nav-item">
         <a class="nav-link" href="{% url 'about' %}"><i class="bi bi-info-circle me-1"></i>Rreth Nesh</a>
       </li>
+
       {% if user.is_authenticated %}
         {% if user.is_staff %}
-        <li class="nav-item">
-          <a class="nav-link btn btn-outline-warning btn-sm ms-2 px-3" href="{% url 'quick_return' %}">
-            <i class="bi bi-arrow-return-left me-1"></i>Kthe Libër
+        <li class="nav-item ms-1">
+          <a class="btn btn-sm btn-nav-action btn-outline-warning" href="{% url 'quick_return' %}">
+            <i class="bi bi-arrow-return-left me-1"></i>Kthe
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link btn btn-outline-success btn-sm ms-1 px-3" href="{% url 'quick_loan' %}">
+        <li class="nav-item ms-1">
+          <a class="btn btn-sm btn-nav-action" href="{% url 'quick_loan' %}"
+             style="background:var(--lib-orange);color:white;border:none">
             <i class="bi bi-arrow-right-circle me-1"></i>Huazo
           </a>
         </li>
@@ -74,18 +295,23 @@
           <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
             <i class="bi bi-person-circle me-1"></i>{{ user.username }}
           </a>
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:10px">
             {% if not user.is_staff %}
-            <li><a class="dropdown-item" href="{% url 'member_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>Paneli Im</a></li>
+            <li><a class="dropdown-item" href="{% url 'member_dashboard' %}">
+              <i class="bi bi-speedometer2 me-2"></i>Paneli Im</a></li>
             {% endif %}
-            <li><a class="dropdown-item" href="{% url 'change_password' %}"><i class="bi bi-key me-2"></i>Ndrysho Fjalëkalimin</a></li>
+            <li><a class="dropdown-item" href="{% url 'change_password' %}">
+              <i class="bi bi-key me-2"></i>Ndrysho Fjalëkalimin</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Dil</a></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
+              <i class="bi bi-box-arrow-right me-2"></i>Dil</a></li>
           </ul>
         </li>
       {% else %}
         <li class="nav-item ms-2">
-          <a class="btn btn-outline-light btn-sm px-3" href="{% url 'login' %}">
+          <a class="btn btn-sm btn-nav-action"
+             href="{% url 'login' %}"
+             style="background:var(--lib-orange);color:white;border:none">
             <i class="bi bi-box-arrow-in-right me-1"></i>Hyr
           </a>
         </li>
@@ -94,64 +320,165 @@
   </div>
 </nav>
 
-<div class="container-fluid">
-  <div class="row">
-
-    {% if user.is_authenticated and user.is_staff %}
-    <!-- STAFF SIDEBAR -->
-    <nav class="col-md-2 d-none d-md-block sidebar py-3 ps-3 pe-2">
+<!-- ── MOBILE OFFCANVAS SIDEBAR ─────────────────────────── -->
+{% if user.is_authenticated %}
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="sidebarOffcanvas">
+  <div class="offcanvas-header">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-book-half" style="color:var(--lib-orange)"></i>
+      <strong>Biblioteka Pirok</strong>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    {% if user.is_staff %}
       <div class="section-label">Operacione të Shpejta</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link" href="{% url 'quick_loan' %}"><i class="bi bi-arrow-right-circle me-2 text-success"></i>Huazo Libër</a></li>
-        <li><a class="nav-link" href="{% url 'quick_return' %}"><i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthe Libër</a></li>
+        <li><a class="nav-link" href="{% url 'quick_loan' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-arrow-right-circle me-2 text-success"></i>Huazo Libër</a></li>
+        <li><a class="nav-link" href="{% url 'quick_return' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthe Libër</a></li>
       </ul>
       <div class="section-label">Librat</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}" href="{% url 'catalog' %}"><i class="bi bi-grid me-2"></i>Katalog</a></li>
-        <li><a class="nav-link" href="{% url 'book_isbn_check' %}"><i class="bi bi-plus-circle me-2"></i>Shto Libër</a></li>
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'author_list' %}active{% endif %}" href="{% url 'author_list' %}"><i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'publisher_list' %}active{% endif %}" href="{% url 'publisher_list' %}"><i class="bi bi-building me-2"></i>Botuesit</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}"
+               href="{% url 'catalog' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-grid me-2"></i>Katalog</a></li>
+        <li><a class="nav-link" href="{% url 'book_isbn_check' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-plus-circle me-2"></i>Shto Libër</a></li>
+        <li><a class="nav-link" href="{% url 'author_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
+        <li><a class="nav-link" href="{% url 'publisher_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-building me-2"></i>Botuesit</a></li>
       </ul>
       <div class="section-label">Anëtarët</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'member_list' %}active{% endif %}" href="{% url 'member_list' %}"><i class="bi bi-people me-2"></i>Lista</a></li>
-        <li><a class="nav-link" href="{% url 'member_add' %}"><i class="bi bi-person-plus me-2"></i>Regjistro</a></li>
+        <li><a class="nav-link" href="{% url 'member_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-people me-2"></i>Lista</a></li>
+        <li><a class="nav-link" href="{% url 'member_add' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-person-plus me-2"></i>Regjistro</a></li>
       </ul>
       <div class="section-label">Huazimet</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'loan_list' %}active{% endif %}" href="{% url 'loan_list' %}"><i class="bi bi-arrow-left-right me-2"></i>Të gjitha</a></li>
+        <li><a class="nav-link" href="{% url 'loan_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-arrow-left-right me-2"></i>Të gjitha</a></li>
       </ul>
       <div class="section-label">Etiketa</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'barcode_sheet' %}active{% endif %}" href="{% url 'barcode_sheet' %}"><i class="bi bi-upc-scan me-2 text-primary"></i>Barkode Libri</a></li>
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'shelf_label_print' %}active{% endif %}" href="{% url 'shelf_label_print' %}"><i class="bi bi-tag me-2 text-info"></i>Etiketa Rafti</a></li>
+        <li><a class="nav-link" href="{% url 'barcode_sheet' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-upc-scan me-2" style="color:var(--lib-blue)"></i>Barkode Libri</a></li>
+        <li><a class="nav-link" href="{% url 'shelf_label_print' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-tag me-2 text-info"></i>Etiketa Rafti</a></li>
       </ul>
       {% if user.is_superuser %}
       <div class="section-label">Admin</div>
       <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'staff_list' %}active{% endif %}" href="{% url 'staff_list' %}"><i class="bi bi-shield-check me-2"></i>Stafi</a></li>
-        <li><a class="nav-link" href="{% url 'admin:index' %}"><i class="bi bi-gear me-2"></i>Admin Panel</a></li>
-        <li><a class="nav-link" href="{% url 'backup_download' %}"><i class="bi bi-download me-2 text-warning"></i>Shkarko Backup</a></li>
+        <li><a class="nav-link" href="{% url 'staff_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-shield-check me-2"></i>Stafi</a></li>
+        <li><a class="nav-link" href="{% url 'admin:index' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-gear me-2"></i>Admin Panel</a></li>
+        <li><a class="nav-link" href="{% url 'backup_download' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-download me-2 text-warning"></i>Backup</a></li>
+      </ul>
+      {% endif %}
+    {% else %}
+      <div class="section-label">Paneli Im</div>
+      <ul class="nav flex-column mb-2">
+        <li><a class="nav-link" href="{% url 'member_dashboard' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+      </ul>
+      <div class="section-label">Biblioteka</div>
+      <ul class="nav flex-column mb-2">
+        <li><a class="nav-link" href="{% url 'catalog' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-search me-2"></i>Kërko Libra</a></li>
+        <li><a class="nav-link" href="{% url 'about' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-info-circle me-2"></i>Rreth Nesh</a></li>
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── MAIN LAYOUT ──────────────────────────────────────── -->
+<div class="container-fluid">
+  <div class="row">
+
+    {% if user.is_authenticated and user.is_staff %}
+    <!-- STAFF SIDEBAR (desktop) -->
+    <nav class="col-lg-2 d-none d-lg-block sidebar py-3 ps-2 pe-2">
+      <div class="section-label">Operacione të Shpejta</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link" href="{% url 'quick_loan' %}">
+          <i class="bi bi-arrow-right-circle me-2 text-success"></i>Huazo Libër</a></li>
+        <li><a class="nav-link" href="{% url 'quick_return' %}">
+          <i class="bi bi-arrow-return-left me-2 text-warning"></i>Kthe Libër</a></li>
+      </ul>
+      <div class="section-label">Librat</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}" href="{% url 'catalog' %}">
+          <i class="bi bi-grid me-2"></i>Katalog</a></li>
+        <li><a class="nav-link" href="{% url 'book_isbn_check' %}">
+          <i class="bi bi-plus-circle me-2"></i>Shto Libër</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'author_list' %}active{% endif %}" href="{% url 'author_list' %}">
+          <i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'publisher_list' %}active{% endif %}" href="{% url 'publisher_list' %}">
+          <i class="bi bi-building me-2"></i>Botuesit</a></li>
+      </ul>
+      <div class="section-label">Anëtarët</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'member_list' %}active{% endif %}" href="{% url 'member_list' %}">
+          <i class="bi bi-people me-2"></i>Lista</a></li>
+        <li><a class="nav-link" href="{% url 'member_add' %}">
+          <i class="bi bi-person-plus me-2"></i>Regjistro</a></li>
+      </ul>
+      <div class="section-label">Huazimet</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'loan_list' %}active{% endif %}" href="{% url 'loan_list' %}">
+          <i class="bi bi-arrow-left-right me-2"></i>Të gjitha</a></li>
+      </ul>
+      <div class="section-label">Etiketa</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'barcode_sheet' %}active{% endif %}" href="{% url 'barcode_sheet' %}">
+          <i class="bi bi-upc-scan me-2" style="color:var(--lib-blue)"></i>Barkode Libri</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'shelf_label_print' %}active{% endif %}" href="{% url 'shelf_label_print' %}">
+          <i class="bi bi-tag me-2 text-info"></i>Etiketa Rafti</a></li>
+      </ul>
+      {% if user.is_superuser %}
+      <div class="section-label">Admin</div>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'staff_list' %}active{% endif %}" href="{% url 'staff_list' %}">
+          <i class="bi bi-shield-check me-2"></i>Stafi</a></li>
+        <li><a class="nav-link" href="{% url 'admin:index' %}">
+          <i class="bi bi-gear me-2"></i>Admin Panel</a></li>
+        <li><a class="nav-link" href="{% url 'backup_download' %}">
+          <i class="bi bi-download me-2 text-warning"></i>Backup</a></li>
       </ul>
       {% endif %}
     </nav>
 
     {% elif user.is_authenticated %}
-    <!-- MEMBER SIDEBAR -->
-    <nav class="col-md-2 d-none d-md-block sidebar py-3 ps-3 pe-2">
+    <!-- MEMBER SIDEBAR (desktop) -->
+    <nav class="col-lg-2 d-none d-lg-block sidebar py-3 ps-2 pe-2">
       <div class="section-label">Paneli Im</div>
-      <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'member_dashboard' %}active{% endif %}" href="{% url 'member_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'member_dashboard' %}active{% endif %}"
+               href="{% url 'member_dashboard' %}">
+          <i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
       </ul>
       <div class="section-label">Biblioteka</div>
-      <ul class="nav flex-column mb-2">
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}" href="{% url 'catalog' %}"><i class="bi bi-search me-2"></i>Kërko Libra</a></li>
-        <li><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'about' %}"><i class="bi bi-info-circle me-2"></i>Rreth Nesh</a></li>
+      <ul class="nav flex-column mb-1">
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}"
+               href="{% url 'catalog' %}">
+          <i class="bi bi-search me-2"></i>Kërko Libra</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}"
+               href="{% url 'about' %}">
+          <i class="bi bi-info-circle me-2"></i>Rreth Nesh</a></li>
       </ul>
     </nav>
     {% endif %}
 
-    <main class="{% if user.is_authenticated %}col-md-10{% else %}col-12{% endif %} py-4 px-4">
+    <!-- MAIN CONTENT -->
+    <main class="{% if user.is_authenticated %}col-lg-10{% else %}col-12{% endif %} py-4 px-3 px-md-4">
       {% if messages %}
         {% for msg in messages %}
           <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show" role="alert">
@@ -168,13 +495,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- FOOTER -->
+<!-- ── FOOTER ───────────────────────────────────────────── -->
 {% load static %}
-<footer class="bg-dark text-white mt-5 py-4">
+<footer class="lib-footer">
   <div class="container">
     <div class="row align-items-center g-3">
       <div class="col-md-4 text-center text-md-start">
-        <i class="bi bi-book-half me-2 text-warning"></i>
+        <i class="bi bi-book-half me-2" style="color:var(--lib-orange)"></i>
         <strong>Biblioteka Pirok</strong><br>
         <small class="text-muted">Fshati Pirok, Tetovë, Maqedonia e Veriut</small><br>
         <small class="text-muted"><i class="bi bi-clock me-1"></i>E Hënë – E Premte, 08:00–16:00</small>
@@ -183,9 +510,9 @@
         <small class="text-muted d-block mb-2">Zhvilluar nga</small>
         <div class="d-flex align-items-center justify-content-center gap-3">
           <img src="{% static 'libra/img/wisdom-house.png' %}" alt="Wisdom House"
-               style="height:45px; object-fit:contain; background:white; border-radius:6px; padding:3px">
+               style="height:42px; object-fit:contain; background:white; border-radius:6px; padding:3px">
           <img src="{% static 'libra/img/data-consulting.png' %}" alt="Data Consulting"
-               style="height:45px; object-fit:contain; background:white; border-radius:6px; padding:3px">
+               style="height:42px; object-fit:contain; background:white; border-radius:6px; padding:3px">
         </div>
         <small class="text-muted d-block mt-2">Muhamed Ademi &mdash; Wisdom House &amp; Data Consulting</small>
       </div>
@@ -196,7 +523,7 @@
         </small>
         <div class="mt-2">
           <a href="https://www.facebook.com/BibliotekaPirok/" target="_blank" rel="noopener"
-             class="btn btn-sm btn-outline-light px-3">
+             class="btn btn-sm btn-outline-light rounded-pill px-3">
             <i class="bi bi-facebook me-1"></i>Facebook
           </a>
         </div>
