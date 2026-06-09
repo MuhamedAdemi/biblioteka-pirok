@@ -39,12 +39,23 @@
             </small>
           </div>
 
-          <!-- ── Shelf Label ──────────────────────────── -->
+          <!-- ── Shelf Label (auto, vetëm pamje) ─────── -->
           <div class="mb-3">
-            <label class="form-label fw-semibold">{{ form.shelf_label.label }}</label>
-            {{ form.shelf_label }}
+            <label class="form-label fw-semibold text-muted">
+              Label Rafti
+              <span class="badge bg-secondary fw-normal ms-1" style="font-size:.7rem">Auto</span>
+            </label>
+            <div class="input-group">
+              <span class="form-control bg-light text-muted font-monospace" style="cursor:default">
+                {{ suggested_shelf|default:"—" }}
+              </span>
+              <a href="{% url 'shelf_label_print' %}" target="_blank"
+                 class="btn btn-outline-secondary" title="Shiko/Printo etiketat e raftit">
+                <i class="bi bi-printer me-1"></i>Printo
+              </a>
+            </div>
             <small class="text-muted d-block mt-1">
-              Label spina rafti — p.sh. <code>320-00001</code>
+              Gjenerohet automatikisht nga numri Dewey i librit. Nuk nevojitet ta futësh.
             </small>
           </div>
 

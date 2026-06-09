@@ -1,3 +1,6 @@
+import secrets
+import string as _string
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -271,19 +274,19 @@ def book_copy_add(request, pk):
         if form.is_valid():
             copy = form.save(commit=False)
             copy.book = book
+            copy.shelf_label = BookCopy.suggest_shelf_label(book.class_number)
             copy.save()
             messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
             return redirect('book_copy_list', pk=pk)
     else:
         suggested = BookCopy.suggest_copy_number_dewey(book.class_number)
-        form = BookCopyForm(initial={
-            'copy_number': suggested,
-            'shelf_label': BookCopy.suggest_shelf_label(book.class_number),
-        })
+        form = BookCopyForm(initial={'copy_number': suggested})
+    suggested_shelf = BookCopy.suggest_shelf_label(book.class_number)
     return render(request, 'libra/book_copy_form.html', {
         'form': form,
         'book': book,
         'class_number': book.class_number,
+        'suggested_shelf': suggested_shelf,
     })
 
 
@@ -1127,3 +1130,56 @@ def book_title_check(request):
             'year': b.year,
         })
     return JsonResponse({'books': data})
+
+
+@login_required
+def reset_numbering(request):
+    """Vetëm superuseri mund të fshijë kopjet, huazimet dhe BarcodeLog-un."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Vetëm administratori mund të aksesojë këtë faqe.')
+        return redirect('home')
+
+    def _new_code():
+        alphabet = _string.ascii_uppercase + _string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(6))
+
+    if request.method == 'POST':
+        entered = request.POST.get('confirm_code', '').strip().upper()
+        session_code = request.session.get('reset_confirm_code', '')
+        c1 = request.POST.get('c1') == 'on'
+        c2 = request.POST.get('c2') == 'on'
+        c3 = request.POST.get('c3') == 'on'
+
+        if not (c1 and c2 and c3):
+            messages.error(request, 'Duhet të shënoni të gjitha tri kutitë e konfirmimit.')
+        elif not entered or entered != session_code:
+            messages.error(request, f'Kodi [{entered}] nuk është i saktë. Kodi duhet të përputhet saktësisht.')
+        else:
+            copy_count = BookCopy.objects.count()
+            loan_count = Loan.objects.count()
+            log_count  = BarcodeLog.objects.count()
+            Loan.objects.all().delete()
+            BookCopy.objects.all().delete()
+            BarcodeLog.objects.all().delete()
+            request.session.pop('reset_confirm_code', None)
+            messages.success(
+                request,
+                f'Reseti u krye me sukses: {copy_count} kopje fizike, '
+                f'{loan_count} huazime dhe {log_count} regjistrime barkodi u fshinë. '
+                f'Numërtimi nis sëri nga 00001.'
+            )
+            return redirect('home')
+
+        # Rilexo statistikat dhe gjenero kod të ri pas gabimit
+        code = _new_code()
+        request.session['reset_confirm_code'] = code
+    else:
+        code = _new_code()
+        request.session['reset_confirm_code'] = code
+
+    stats = {
+        'copies': BookCopy.objects.count(),
+        'loans':  Loan.objects.count(),
+        'logs':   BarcodeLog.objects.count(),
+    }
+    return render(request, 'libra/reset_numbering.html', {'code': code, 'stats': stats})

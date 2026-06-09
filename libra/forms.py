@@ -67,10 +67,9 @@ BookAuthorFormSet = inlineformset_factory(
 class BookCopyForm(forms.ModelForm):
     class Meta:
         model = BookCopy
-        fields = ['copy_number', 'shelf_label', 'notes']
+        fields = ['copy_number', 'notes']
         widgets = {
-            'copy_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'p.sh. 101-000001'}),
-            'shelf_label': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'p.sh. 3-00001'}),
+            'copy_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'p.sh. 101-00001'}),
             'notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Shënime opsionale'}),
         }
 

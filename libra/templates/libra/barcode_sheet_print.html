@@ -42,16 +42,33 @@
 
     /* ── Etiketa individuale: 5cm × 2cm ── */
     .label {
+      --dy: 0mm;
+      --dx: 0mm;
       width: 50mm;
-      height: 20.5mm;
+      height: 20mm;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
       border: 0.3pt dotted #ccc;
       padding: 1mm 1.5mm;
+      transform: translateX(var(--dx)) translateY(var(--dy));
+      position: relative;
     }
+
+    /* ── Korrektim per kolumnë 1: +5mm djathtas ── */
+    .page .label:nth-child(4n+1) { --dx: 5mm; }
+
+    /* ── Korrektim per rresht (lëviz posht) ── */
+    .page .label:nth-child(-n+4)                    { --dy: 4mm; }
+    .page .label:nth-child(n+5):nth-child(-n+8)     { --dy: 3mm; }
+    .page .label:nth-child(n+9):nth-child(-n+16)    { --dy: 2mm; }
+    .page .label:nth-child(n+17):nth-child(-n+20)   { --dy: 1mm; }
+    /* Rreshtat 6-9 (21-36): --dy: 0mm (default, perfekte) */
+    .page .label:nth-child(n+37):nth-child(-n+40)   { --dy: 1mm; }
+    .page .label:nth-child(n+41):nth-child(-n+44)   { --dy: 2mm; }
+    .page .label:nth-child(n+45):nth-child(-n+48)   { --dy: 3mm; }
+    .page .label:nth-child(n+49)                     { --dy: 4mm; }
 
     .label-name {
       font-size: 5pt;

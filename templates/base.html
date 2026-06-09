@@ -379,6 +379,8 @@
           <i class="bi bi-gear me-2"></i>Admin Panel</a></li>
         <li><a class="nav-link" href="{% url 'backup_download' %}" data-bs-dismiss="offcanvas">
           <i class="bi bi-download me-2 text-warning"></i>Backup</a></li>
+        <li><a class="nav-link text-danger" href="{% url 'reset_numbering' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Numrat</a></li>
       </ul>
       {% endif %}
     {% else %}
@@ -452,6 +454,8 @@
           <i class="bi bi-gear me-2"></i>Admin Panel</a></li>
         <li><a class="nav-link" href="{% url 'backup_download' %}">
           <i class="bi bi-download me-2 text-warning"></i>Backup</a></li>
+        <li><a class="nav-link text-danger {% if request.resolver_match.url_name == 'reset_numbering' %}active{% endif %}" href="{% url 'reset_numbering' %}">
+          <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Numrat</a></li>
       </ul>
       {% endif %}
     </nav>

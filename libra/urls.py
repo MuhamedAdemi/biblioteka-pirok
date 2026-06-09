@@ -77,6 +77,7 @@ urlpatterns = [
     path('stafi/', views.staff_list, name='staff_list'),
     path('stafi/shto/', views.staff_create, name='staff_create'),
     path('stafi/<int:pk>/toggle/', views.staff_toggle, name='staff_toggle'),
+    path('stafi/reset-numrat/', views.reset_numbering, name='reset_numbering'),
 
     # Member dashboard
     path('dashboard/', views.member_dashboard, name='member_dashboard'),
