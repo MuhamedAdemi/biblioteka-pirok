@@ -3,11 +3,12 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-6">
+  <div class="col-md-5">
+
     <h5 class="mb-1"><i class="bi bi-upc me-2"></i>Shto Kopje Fizike</h5>
     <p class="text-muted small mb-3">
       Libri: <strong>{{ book.title }}</strong>
-      {% if class_number %} &nbsp;·&nbsp; Nr. Klasifikimi: <code>{{ class_number }}</code>{% endif %}
+      {% if class_number %}&nbsp;·&nbsp;Dewey: <code>{{ class_number }}</code>{% endif %}
     </p>
 
     <div class="card">
@@ -15,53 +16,19 @@
         <form method="post" id="copy-form">
           {% csrf_token %}
 
-          <!-- ── Copy Number (barcode) ─────────────────── -->
           <div class="mb-3">
             <label class="form-label fw-semibold">
-              {{ form.copy_number.label }} <span class="text-danger">*</span>
+              Nr. Kopjes (Barkod) <span class="text-danger">*</span>
             </label>
-
-            <div class="input-group">
-              {{ form.copy_number }}
-              {% if class_number %}
-              <button type="button" class="btn btn-outline-secondary" id="btn-dewey-suggest"
-                      title="Auto-gjenero nga Dewey">
-                <i class="bi bi-magic me-1"></i>Auto
-              </button>
-              {% endif %}
-            </div>
-
-            <!-- Validation feedback -->
-            <div id="cn-feedback" class="mt-1" style="font-size:.82rem"></div>
-            <small class="text-muted d-block mt-1">
-              Format sugjeruar: <code>{{ class_number|slice:":3" }}-XXXXX</code> (Dewey + nr rendor)
-              &nbsp;·&nbsp; Ose skanoni barkod-in me scanner.
+            {{ form.copy_number }}
+            <div id="cn-feedback" class="mt-2" style="font-size:.83rem; min-height:1.4em"></div>
+            <small class="text-muted">
+              Skanoni barkod-in ose shkruani: <code>101-00001</code>
             </small>
           </div>
 
-          <!-- ── Shelf Label (auto, vetëm pamje) ─────── -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold text-muted">
-              Label Rafti
-              <span class="badge bg-secondary fw-normal ms-1" style="font-size:.7rem">Auto</span>
-            </label>
-            <div class="input-group">
-              <span class="form-control bg-light text-muted font-monospace" style="cursor:default">
-                {{ suggested_shelf|default:"—" }}
-              </span>
-              <a href="{% url 'shelf_label_print' %}" target="_blank"
-                 class="btn btn-outline-secondary" title="Shiko/Printo etiketat e raftit">
-                <i class="bi bi-printer me-1"></i>Printo
-              </a>
-            </div>
-            <small class="text-muted d-block mt-1">
-              Gjenerohet automatikisht nga numri Dewey i librit. Nuk nevojitet ta futësh.
-            </small>
-          </div>
-
-          <!-- ── Notes ───────────────────────────────── -->
-          <div class="mb-3">
-            <label class="form-label">{{ form.notes.label }}</label>
+          <div class="mb-4">
+            <label class="form-label text-muted small">{{ form.notes.label }}</label>
             {{ form.notes }}
           </div>
 
@@ -75,100 +42,68 @@
       </div>
     </div>
 
-    <!-- ── Legend ─────────────────────────────────── -->
-    <div class="card mt-3 border-0 bg-light">
-      <div class="card-body py-2 px-3">
-        <small class="text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          <strong>Si funksionon:</strong> Nëse keni barkod të printuar paraprakisht, skanojeni —
-          fusha mbushet automatikisht dhe sistemi kontrollon nëse numri ekziston.
-          Nëse nuk keni barkod, klikoni <strong>Auto</strong> për numër nga Dewey.
-        </small>
-      </div>
-    </div>
   </div>
 </div>
 
 <script>
 (function() {
-  const cnInput = document.getElementById('{{ form.copy_number.id_for_label }}');
-  const feedback = document.getElementById('cn-feedback');
+  const cnInput   = document.getElementById('{{ form.copy_number.id_for_label }}');
+  const feedback  = document.getElementById('cn-feedback');
   const btnSubmit = document.getElementById('btn-submit');
-  const btnDewey = document.getElementById('btn-dewey-suggest');
-  const checkUrl = '{% url "check_copy_number_ajax" %}';
-  const deweyUrl = '{% url "shelf_label_suggest" %}';
-  let checkTimer = null;
-  let lastChecked = '';
+  const checkUrl  = '{% url "check_copy_number_ajax" %}';
+  const VALID_PREFIXES = ['101', '201', '301', '401'];
+  let timer       = null;
   let isDuplicate = false;
 
-  function setFeedback(exists, value) {
-    if (!value) {
-      feedback.innerHTML = '';
-      isDuplicate = false;
-      btnSubmit.disabled = false;
-      return;
-    }
-    if (exists) {
-      feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>' +
-        'Ky numër <strong>' + value + '</strong> është tashmë i regjistruar! Zgjidhni numër tjetër.</span>';
-      isDuplicate = true;
-      btnSubmit.disabled = true;
-    } else {
-      feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>' +
-        'Numri <strong>' + value + '</strong> është i disponueshëm.</span>';
-      isDuplicate = false;
-      btnSubmit.disabled = false;
-    }
+  function setFeedback(state, msg) {
+    const icons = { ok: 'check-circle-fill', warn: 'exclamation-triangle-fill', err: 'x-circle-fill', wait: 'hourglass-split' };
+    const colors = { ok: 'success', warn: 'warning', err: 'danger', wait: 'muted' };
+    feedback.innerHTML = msg
+      ? `<span class="text-${colors[state]}"><i class="bi bi-${icons[state]} me-1"></i>${msg}</span>`
+      : '';
   }
 
-  function checkCopyNumber(value) {
-    if (!value || value === lastChecked) return;
-    lastChecked = value;
-    fetch(checkUrl + '?copy_number=' + encodeURIComponent(value))
+  function validate(exists, value) {
+    isDuplicate = false;
+    btnSubmit.disabled = false;
+    if (!value) { setFeedback('', ''); return; }
+
+    if (exists) {
+      setFeedback('err', `Numri <strong>${value}</strong> është tashmë i regjistruar.`);
+      isDuplicate = true;
+      btnSubmit.disabled = true;
+      return;
+    }
+
+    const m = value.match(/^(\d{3})-(\d{5})$/);
+    if (!m) {
+      setFeedback('warn', 'Formati: <strong>XXX-NNNNN</strong> (p.sh. <code>101-00001</code>).');
+      return;
+    }
+    if (!VALID_PREFIXES.includes(m[1])) {
+      setFeedback('warn', `Prefiks <strong>${m[1]}</strong> nuk njihet. Pritet: <code>101</code> SQ · <code>201</code> MK · <code>301</code> EN · <code>401</code> tjetër.`);
+      return;
+    }
+    setFeedback('ok', `Numri <strong>${value}</strong> është i disponueshëm.`);
+  }
+
+  function check(val) {
+    if (!val) { validate(false, ''); return; }
+    setFeedback('wait', 'Duke kontrolluar…');
+    fetch(checkUrl + '?copy_number=' + encodeURIComponent(val))
       .then(r => r.json())
-      .then(data => setFeedback(data.exists, data.copy_number))
-      .catch(() => {});
+      .then(d => validate(d.exists, d.copy_number))
+      .catch(() => setFeedback('', ''));
   }
 
   cnInput.addEventListener('input', function() {
-    clearTimeout(checkTimer);
+    clearTimeout(timer);
     const val = this.value.trim();
-    if (!val) { setFeedback(false, ''); return; }
-    feedback.innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split me-1"></i>Duke kontrolluar...</span>';
-    checkTimer = setTimeout(() => checkCopyNumber(val), 400);
+    timer = setTimeout(() => check(val), 380);
   });
 
-  // Check immediately if field already has a value on load
-  if (cnInput.value.trim()) {
-    checkCopyNumber(cnInput.value.trim());
-  }
+  if (cnInput.value.trim()) check(cnInput.value.trim());
 
-  // Auto-suggest button (Dewey)
-  {% if class_number %}
-  if (btnDewey) {
-    btnDewey.addEventListener('click', function() {
-      btnDewey.disabled = true;
-      btnDewey.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-      fetch(deweyUrl + '?class_number={{ class_number|urlencode }}')
-        .then(r => r.json())
-        .then(data => {
-          if (data.shelf_label) {
-            cnInput.value = data.shelf_label;
-            lastChecked = '';
-            checkCopyNumber(data.shelf_label);
-          }
-          btnDewey.disabled = false;
-          btnDewey.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
-        })
-        .catch(() => {
-          btnDewey.disabled = false;
-          btnDewey.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
-        });
-    });
-  }
-  {% endif %}
-
-  // Block form submit if duplicate
   document.getElementById('copy-form').addEventListener('submit', function(e) {
     if (isDuplicate) {
       e.preventDefault();

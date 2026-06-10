@@ -15,15 +15,17 @@
       padding: 8px 18px; border-radius: 6px; cursor: pointer;
       font-size: 14px; text-decoration: none; display: inline-block;
     }
-    .btn-print { background: #0d6efd; color: #fff; border: none; }
+    .btn-print { background: #1A3558; color: #fff; border: none; }
     .btn-back  { background: #6c757d; color: #fff; border: none; }
 
     .info-bar {
       background: #f8f9fa; border-bottom: 1px solid #dee2e6;
       padding: 10px 16px; font-size: 13px; color: #495057;
     }
+    .info-bar .badge-full  { background:#198754; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; }
+    .info-bar .badge-part  { background:#ffc107; color:#000; padding:2px 8px; border-radius:4px; font-size:11px; }
 
-    /* E njëjta faqe si barkod: 4 kolona × 14 rreshta = 56/faqe */
+    /* ── Faqja e printimit: 4×14 = 56/faqe ── */
     .page {
       width: 210mm;
       min-height: 297mm;
@@ -37,10 +39,12 @@
     }
     .page:last-child { page-break-after: avoid; break-after: avoid; }
 
-    /* E njëjta etiketë: 5cm × 2cm */
+    /* ── Etiketa: 5cm × 2cm, dy rreshta teksti ── */
     .label {
+      --dy: 0mm;
+      --dx: 0mm;
       width: 50mm;
-      height: 20.5mm;
+      height: 20mm;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -48,10 +52,23 @@
       border: 0.3pt dotted #ccc;
       text-align: center;
       line-height: 1.1;
+      transform: translateX(var(--dx)) translateY(var(--dy));
+      position: relative;
     }
 
+    /* ── Korrektim identik me barkode-faqen ── */
+    .page .label:nth-child(4n+1)                    { --dx: 5mm; }
+    .page .label:nth-child(-n+4)                    { --dy: 4mm; }
+    .page .label:nth-child(n+5):nth-child(-n+8)     { --dy: 3mm; }
+    .page .label:nth-child(n+9):nth-child(-n+16)    { --dy: 2mm; }
+    .page .label:nth-child(n+17):nth-child(-n+20)   { --dy: 1mm; }
+    .page .label:nth-child(n+37):nth-child(-n+40)   { --dy: 1mm; }
+    .page .label:nth-child(n+41):nth-child(-n+44)   { --dy: 2mm; }
+    .page .label:nth-child(n+45):nth-child(-n+48)   { --dy: 3mm; }
+    .page .label:nth-child(n+49)                     { --dy: 4mm; }
+
     .label-class {
-      font-size: 13pt;
+      font-size: 14pt;
       font-weight: 900;
       letter-spacing: 1pt;
     }
@@ -59,9 +76,11 @@
     .label-seq {
       font-size: 10pt;
       font-weight: 700;
-      letter-spacing: 1pt;
+      letter-spacing: 1.5pt;
+      margin-top: 1mm;
     }
 
+    /* ── Print media ── */
     @media print {
       .print-controls, .info-bar { display: none !important; }
 
@@ -75,6 +94,7 @@
       .page {
         margin: 0;
         padding: 5mm;
+        border: none;
       }
 
       .label { border: none; }
@@ -89,14 +109,29 @@
 </div>
 
 <div class="info-bar">
-  Total etiketa: <strong>{{ total }}</strong> &nbsp;|&nbsp;
-  Faqe: <strong>{{ pages|length }}</strong>
-  {% if class_filter %} &nbsp;|&nbsp; Filter: <strong>{{ class_filter }}-*</strong>{% endif %}
+  <strong>Etiketa Rafti</strong>
+  &nbsp;|&nbsp; Total: <strong>{{ total }}</strong>
+  &nbsp;|&nbsp;
+  {% if full_pages > 0 %}
+    <span class="badge-full">{{ full_pages }} faqe të plota</span>
+  {% endif %}
+  {% if remainder > 0 %}
+    &nbsp;<span class="badge-part">{{ remainder }}/56 në faqen e fundit</span>
+    &nbsp;<small class="text-muted">(duhen {{ per_page|add:"-"|add:remainder }} etiketa të tjera për faqe të plotë)</small>
+  {% elif total == 0 %}
+    <span class="text-muted">— Nuk ka etiketa ende.</span>
+  {% endif %}
+  {% if class_filter %}
+    &nbsp;|&nbsp; Filter: <strong>{{ class_filter }}-*</strong>
+  {% endif %}
 </div>
 
 {% if total == 0 %}
-<div style="padding: 40px; text-align:center; color:#888; font-size:16px;">
-  Nuk ka kopje me etiketa rafti. Regjistro kopje libri me fushën <strong>Label Rafti</strong> të plotësuar.
+<div style="padding:60px; text-align:center; color:#888; font-size:15px;">
+  <p>Nuk ka etiketa rafti ende.</p>
+  <p style="margin-top:8px; font-size:13px;">
+    Etiketat gjenerohen automatikisht kur shtoni kopje fizike libri.
+  </p>
 </div>
 {% endif %}
 

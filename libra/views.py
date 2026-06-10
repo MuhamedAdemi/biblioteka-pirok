@@ -279,14 +279,12 @@ def book_copy_add(request, pk):
             messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
             return redirect('book_copy_list', pk=pk)
     else:
-        suggested = BookCopy.suggest_copy_number_dewey(book.class_number)
+        suggested = BookCopy.next_copy_number(language=book.language)
         form = BookCopyForm(initial={'copy_number': suggested})
-    suggested_shelf = BookCopy.suggest_shelf_label(book.class_number)
     return render(request, 'libra/book_copy_form.html', {
         'form': form,
         'book': book,
         'class_number': book.class_number,
-        'suggested_shelf': suggested_shelf,
     })
 
 
@@ -817,12 +815,18 @@ def shelf_label_print(request):
         copies = copies.filter(shelf_label__startswith=class_filter)
 
     copies_list = list(copies)
-    # 7 kolona × 8 rreshta = 56 etiketa/faqe
-    pages = [copies_list[i:i + 56] for i in range(0, len(copies_list), 56)]
+    PER_PAGE = 56
+    pages = [copies_list[i:i + PER_PAGE] for i in range(0, len(copies_list), PER_PAGE)]
+    total = len(copies_list)
+    full_pages = total // PER_PAGE
+    remainder  = total % PER_PAGE
 
     return render(request, 'libra/shelf_label_print.html', {
         'pages': pages,
-        'total': len(copies_list),
+        'total': total,
+        'full_pages': full_pages,
+        'remainder': remainder,
+        'per_page': PER_PAGE,
         'class_filter': class_filter,
     })
 
