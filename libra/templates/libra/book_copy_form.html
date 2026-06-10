@@ -20,11 +20,16 @@
             <label class="form-label fw-semibold">
               Nr. Kopjes (Barkod) <span class="text-danger">*</span>
             </label>
-            {{ form.copy_number }}
-            <div id="cn-feedback" class="mt-2" style="font-size:.83rem; min-height:1.4em"></div>
-            <small class="text-muted">
-              Skanoni barkod-in ose shkruani: <code>101-00001</code>
-            </small>
+            <input type="text"
+                   name="copy_number"
+                   id="id_copy_number"
+                   class="form-control form-control-lg text-center font-monospace"
+                   placeholder="101-00001"
+                   autocomplete="off"
+                   spellcheck="false"
+                   autofocus
+                   value="">
+            <div id="cn-feedback" class="mt-2" style="font-size:.83rem; min-height:1.5em"></div>
           </div>
 
           <div class="mb-4">
@@ -33,7 +38,7 @@
           </div>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="btn-submit">
+            <button type="submit" class="btn btn-primary" id="btn-submit" disabled>
               <i class="bi bi-check me-1"></i>Shto Kopjen
             </button>
             <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-outline-secondary">Anulo</a>
@@ -42,73 +47,95 @@
       </div>
     </div>
 
+    <div class="card mt-3 border-0" style="background:#F5F5F7">
+      <div class="card-body py-2 px-3">
+        <small class="text-muted">
+          <strong>Formati i pranueshëm:</strong>
+          &nbsp;<code>101-NNNNN</code> shqip &nbsp;·&nbsp;
+          <code>201-NNNNN</code> maqedon. &nbsp;·&nbsp;
+          <code>301-NNNNN</code> anglisht &nbsp;·&nbsp;
+          <code>401-NNNNN</code> tjetër
+          &nbsp;— ku <code>NNNNN</code> = saktësisht 5 shifra (00001–99999)
+        </small>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 (function() {
-  const cnInput   = document.getElementById('{{ form.copy_number.id_for_label }}');
+  const input     = document.getElementById('id_copy_number');
   const feedback  = document.getElementById('cn-feedback');
   const btnSubmit = document.getElementById('btn-submit');
   const checkUrl  = '{% url "check_copy_number_ajax" %}';
-  const VALID_PREFIXES = ['101', '201', '301', '401'];
-  let timer       = null;
-  let isDuplicate = false;
 
-  function setFeedback(state, msg) {
-    const icons = { ok: 'check-circle-fill', warn: 'exclamation-triangle-fill', err: 'x-circle-fill', wait: 'hourglass-split' };
-    const colors = { ok: 'success', warn: 'warning', err: 'danger', wait: 'muted' };
-    feedback.innerHTML = msg
-      ? `<span class="text-${colors[state]}"><i class="bi bi-${icons[state]} me-1"></i>${msg}</span>`
+  /* Formati strikt: saktësisht 101/201/301/401 + vizë + saktësisht 5 shifra */
+  const PATTERN = /^(101|201|301|401)-\d{5}$/;
+
+  let timer       = null;
+  let currentVal  = '';
+
+  function fb(type, html) {
+    /* type: 'ok' | 'err' | 'wait' */
+    const cfg = {
+      ok:   { icon: 'check-circle-fill',       cls: 'text-success' },
+      err:  { icon: 'x-circle-fill',           cls: 'text-danger'  },
+      wait: { icon: 'hourglass-split',          cls: 'text-muted'   },
+    };
+    const c = cfg[type] || cfg.wait;
+    feedback.innerHTML = html
+      ? `<span class="${c.cls}"><i class="bi bi-${c.icon} me-1"></i>${html}</span>`
       : '';
   }
 
-  function validate(exists, value) {
-    isDuplicate = false;
-    btnSubmit.disabled = false;
-    if (!value) { setFeedback('', ''); return; }
+  function onResult(exists, value) {
+    if (value !== currentVal) return;   /* ignore stale responses */
 
     if (exists) {
-      setFeedback('err', `Numri <strong>${value}</strong> është tashmë i regjistruar.`);
-      isDuplicate = true;
+      fb('err', `Numri <strong>${value}</strong> është tashmë i regjistruar. Skano ose shkruaj numër tjetër.`);
       btnSubmit.disabled = true;
-      return;
+    } else {
+      fb('ok', `Numri <strong>${value}</strong> është i lirë — mund të regjistrohet.`);
+      btnSubmit.disabled = false;
     }
-
-    const m = value.match(/^(\d{3})-(\d{5})$/);
-    if (!m) {
-      setFeedback('warn', 'Formati: <strong>XXX-NNNNN</strong> (p.sh. <code>101-00001</code>).');
-      return;
-    }
-    if (!VALID_PREFIXES.includes(m[1])) {
-      setFeedback('warn', `Prefiks <strong>${m[1]}</strong> nuk njihet. Pritet: <code>101</code> SQ · <code>201</code> MK · <code>301</code> EN · <code>401</code> tjetër.`);
-      return;
-    }
-    setFeedback('ok', `Numri <strong>${value}</strong> është i disponueshëm.`);
   }
 
-  function check(val) {
-    if (!val) { validate(false, ''); return; }
-    setFeedback('wait', 'Duke kontrolluar…');
-    fetch(checkUrl + '?copy_number=' + encodeURIComponent(val))
-      .then(r => r.json())
-      .then(d => validate(d.exists, d.copy_number))
-      .catch(() => setFeedback('', ''));
-  }
-
-  cnInput.addEventListener('input', function() {
+  function handleInput() {
     clearTimeout(timer);
-    const val = this.value.trim();
-    timer = setTimeout(() => check(val), 380);
-  });
+    btnSubmit.disabled = true;
 
-  if (cnInput.value.trim()) check(cnInput.value.trim());
+    const val = input.value.trim();
+    currentVal = val;
 
-  document.getElementById('copy-form').addEventListener('submit', function(e) {
-    if (isDuplicate) {
-      e.preventDefault();
-      feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!val) {
+      fb('', '');
+      return;
     }
+
+    if (!PATTERN.test(val)) {
+      fb('err',
+        'Formati nuk pranohet. Duhet saktësisht: ' +
+        '<code>101-00001</code> — 3 shifra + vizë + 5 shifra.'
+      );
+      return;
+    }
+
+    /* Formati OK → kontrollo duplikat */
+    fb('wait', 'Duke kontrolluar…');
+    timer = setTimeout(() => {
+      fetch(checkUrl + '?copy_number=' + encodeURIComponent(val))
+        .then(r => r.json())
+        .then(d => onResult(d.exists, d.copy_number))
+        .catch(() => fb('', ''));
+    }, 350);
+  }
+
+  input.addEventListener('input', handleInput);
+
+  /* Bloko submit nëse butoni është disabled (siguri shtesë) */
+  document.getElementById('copy-form').addEventListener('submit', function(e) {
+    if (btnSubmit.disabled) e.preventDefault();
   });
 })();
 </script>

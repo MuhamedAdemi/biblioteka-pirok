@@ -277,10 +277,16 @@ def book_copy_add(request, pk):
             copy.shelf_label = BookCopy.suggest_shelf_label(book.class_number)
             copy.save()
             messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
+            total_labels = BookCopy.objects.filter(shelf_label__gt='').count()
+            if total_labels > 0 and total_labels % 56 == 0:
+                messages.info(
+                    request,
+                    f'Faqe etikete e plotë — {total_labels} etiketa ({total_labels // 56} × 56). '
+                    f'Shko te Etiketa Rafti dhe printo faqen e re.'
+                )
             return redirect('book_copy_list', pk=pk)
     else:
-        suggested = BookCopy.next_copy_number(language=book.language)
-        form = BookCopyForm(initial={'copy_number': suggested})
+        form = BookCopyForm()
     return render(request, 'libra/book_copy_form.html', {
         'form': form,
         'book': book,
@@ -826,6 +832,7 @@ def shelf_label_print(request):
         'total': total,
         'full_pages': full_pages,
         'remainder': remainder,
+        'needed': PER_PAGE - remainder if remainder else 0,
         'per_page': PER_PAGE,
         'class_filter': class_filter,
     })
