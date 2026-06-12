@@ -380,6 +380,12 @@ function fuzzyScoreFn(search) {
 // ──────────────────────────────────────────────────────────────────
 // Tom Select: Publisher — static (Django renders all publishers)
 // ──────────────────────────────────────────────────────────────────
+// Pastro tekstin "---------" nga opsioni bosh para init
+(function() {
+  const emptyOpt = document.querySelector('#{{ form.publisher.id_for_label }} option[value=""]');
+  if (emptyOpt) emptyOpt.textContent = '';
+})();
+
 const pubTS = new TomSelect('#{{ form.publisher.id_for_label }}', {
   placeholder: 'Shkruaj emrin e botuesit...',
   allowEmptyOption: true,
@@ -389,6 +395,9 @@ const pubTS = new TomSelect('#{{ form.publisher.id_for_label }}', {
     no_results: () => '<div class="no-results">Nuk u gjet. Shto botues të ri me butonin <strong>+</strong>.</div>',
   },
 });
+
+// Nëse nuk ka botues të zgjedhur, trego vetëm placeholder
+if (!pubTS.getValue()) pubTS.clear();
 
 pubTS.on('change', function() {
   document.getElementById('publisherWarning').innerHTML = '';
@@ -410,7 +419,11 @@ new TomSelect('#{{ form.subjects.id_for_label }}', {
 function initAuthorSelects() {
   document.querySelectorAll('select[name$="-author"]').forEach(function(el) {
     if (el.tomselect) return;
-    new TomSelect(el, {
+    // Pastro tekstin "---------" para init
+    var emptyOpt = el.querySelector('option[value=""]');
+    if (emptyOpt) emptyOpt.textContent = '';
+
+    var ts = new TomSelect(el, {
       allowEmptyOption: true,
       placeholder: 'Kërko autor (mbiemri, emri)...',
       maxOptions: 500,
@@ -421,6 +434,8 @@ function initAuthorSelects() {
         }
       }
     });
+    // Nëse rreshti është bosh, trego placeholder
+    if (!ts.getValue()) ts.clear();
   });
 }
 initAuthorSelects();
