@@ -50,29 +50,68 @@
             {{ form.isbn }}
           </div>
 
-          <!-- Nr. Klasifikimi + label preview -->
+          <!-- Nr. Klasifikimi -->
           <div class="col-md-6">
             <label class="form-label">{{ form.class_number.label }}</label>
             {{ form.class_number }}
             <small class="text-muted">Dewey p.sh. 320.01, 330.952</small>
           </div>
 
-          <!-- Preview barkod + label -->
+          <!-- Kopjet fizike (edit) / Preview (add) -->
           <div class="col-md-6">
-            <label class="form-label text-muted">
-              <i class="bi bi-upc-scan me-1"></i>ID & Etiketa (Kopja e 1-rë)
-            </label>
-            <div class="border rounded px-3 py-2 bg-light">
-              <div class="d-flex justify-content-between small mb-1">
-                <span class="text-muted">Barkodi:</span>
-                <code id="barkodPreview" class="fw-bold text-dark fs-6">—</code>
+            {% if book %}
+              <label class="form-label text-muted small fw-semibold">
+                <i class="bi bi-upc-scan me-1"></i>Kopjet Fizike
+                <span class="badge bg-secondary fw-normal ms-1">{{ copies.count }}</span>
+              </label>
+              {% if copies %}
+                <div class="border rounded" style="max-height:110px;overflow-y:auto;font-size:.78rem">
+                  <table class="table table-sm mb-0">
+                    <tbody>
+                      {% for c in copies %}
+                      <tr>
+                        <td><code>{{ c.copy_number }}</code></td>
+                        <td class="text-muted">{{ c.shelf_label|default:"—" }}</td>
+                        <td>
+                          {% if c.is_available %}
+                            <span class="badge bg-success" style="font-size:.65rem">✓</span>
+                          {% else %}
+                            <span class="badge bg-warning text-dark" style="font-size:.65rem">H</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-sm btn-outline-primary mt-1 w-100">
+                  <i class="bi bi-list-ul me-1"></i>Menaxho Kopjet
+                </a>
+              {% else %}
+                <div class="border rounded p-3 bg-light text-center">
+                  <i class="bi bi-inbox text-muted d-block mb-1"></i>
+                  <small class="text-muted">Nuk ka kopje fizike.</small>
+                  <a href="{% url 'book_copy_add' book.pk %}" class="btn btn-sm btn-primary d-block mt-2">
+                    <i class="bi bi-plus me-1"></i>Shto Kopje Fizike
+                  </a>
+                </div>
+              {% endif %}
+            {% else %}
+              <label class="form-label text-muted">
+                <i class="bi bi-upc-scan me-1"></i>ID & Etiketa (Kopja e 1-rë)
+              </label>
+              <div class="border rounded px-3 py-2 bg-light">
+                <div class="d-flex justify-content-between small mb-1">
+                  <span class="text-muted">Barkodi:</span>
+                  <code id="barkodPreview" class="fw-bold text-dark fs-6">—</code>
+                </div>
+                <div class="d-flex justify-content-between small">
+                  <span class="text-muted">Label Rafti:</span>
+                  <code id="labelPreview" class="fw-bold text-dark fs-6">—</code>
+                </div>
               </div>
-              <div class="d-flex justify-content-between small">
-                <span class="text-muted">Label Rafti:</span>
-                <code id="labelPreview" class="fw-bold text-dark fs-6">—</code>
-              </div>
-            </div>
-            <small class="text-muted" style="font-size:.72rem">Gjenerohet kur shtoni kopjen fizike</small>
+              <small class="text-muted" style="font-size:.72rem">Gjenerohet kur shtoni kopjen fizike</small>
+            {% endif %}
           </div>
 
         </div>
@@ -303,40 +342,50 @@
 <script>
 const csrf = '{{ csrf_token }}';
 const bookId = '{{ book.pk|default:"" }}';
-const existingAuthors = {{ existing_authors_json|safe }};
+const existingAuthors  = {{ existing_authors_json|safe }};
+const initialPublisher = {{ initial_publisher_json|safe }};
 
 // ──────────────────────────────────────────────────────────────────
-// Tom Select: Publisher — me kontroll dublikatësh si titulli
+// Tom Select: Publisher — AJAX kërkim (si autorët) + fuzzy server
 // ──────────────────────────────────────────────────────────────────
+
+// Fshi opsionet statike nga <select> (Django i gjeneron, por ne i
+// ngarkojmë me AJAX — vetëm opsioni i zgjedhur aktualisht mbetet)
+(function() {
+  const sel = document.getElementById('{{ form.publisher.id_for_label }}');
+  const currentVal = sel.value;
+  while (sel.options.length > 0) sel.remove(0);
+  const empty = new Option('', '', true, !currentVal);
+  sel.add(empty);
+  if (initialPublisher) {
+    const opt = new Option(initialPublisher.text, initialPublisher.id, false, true);
+    sel.add(opt);
+  }
+})();
+
 const pubTS = new TomSelect('#{{ form.publisher.id_for_label }}', {
-  placeholder: 'Kërko botues...',
+  placeholder: 'Shkruaj emrin e botuesit...',
   allowEmptyOption: true,
-  maxOptions: 200,
+  valueField: 'id',
+  labelField: 'text',
+  searchField: 'text',
+  create: false,
+  options: initialPublisher ? [{ id: String(initialPublisher.id), text: initialPublisher.text }] : [],
+  items:   initialPublisher ? [String(initialPublisher.id)] : [],
+  load: function(query, callback) {
+    if (query.length < 1) return callback();
+    fetch('{% url "publisher_search" %}?q=' + encodeURIComponent(query))
+      .then(r => r.json())
+      .then(d => callback(d.results.map(p => ({ id: String(p.id), text: p.text }))))
+      .catch(() => callback());
+  },
+  shouldLoad: q => q.length >= 1,
+  render: {
+    no_results: () => '<div class="no-results">Nuk u gjet. Shto botues të ri me butonin <strong>+</strong>.</div>',
+    loading:    () => '<div class="no-results">Duke kërkuar…</div>',
+  },
 });
 
-let pubTimer;
-pubTS.on('type', function(val) {
-  clearTimeout(pubTimer);
-  const warn = document.getElementById('publisherWarning');
-  if (val.length < 2) { warn.innerHTML = ''; return; }
-  pubTimer = setTimeout(function() {
-    fetch('{% url "publisher_search" %}?q=' + encodeURIComponent(val))
-      .then(r => r.json())
-      .then(data => {
-        if (!data.results.length) { warn.innerHTML = ''; return; }
-        const exact = data.results.find(p => p.text.toLowerCase() === val.toLowerCase());
-        const cls  = exact ? 'alert-danger'          : 'alert-warning';
-        const icon = exact ? 'bi-x-circle-fill'      : 'bi-exclamation-triangle-fill';
-        const msg  = exact ? 'Ky botues ekziston tashmë!' : 'Botues të ngjashëm:';
-        let html = `<div class="alert ${cls} py-2 mt-1 small">
-          <i class="bi ${icon} me-1"></i><strong>${msg}</strong>
-          <ul class="mb-0 mt-1 ps-3">`;
-        data.results.forEach(p => { html += `<li>${p.text}</li>`; });
-        html += `</ul><small class="text-muted">Zgjedhni nga lista nëse ekziston — mos krijoni të ri.</small></div>`;
-        warn.innerHTML = html;
-      });
-  }, 400);
-});
 pubTS.on('change', function() {
   document.getElementById('publisherWarning').innerHTML = '';
 });
@@ -393,31 +442,35 @@ function initAuthorSelects() {
 initAuthorSelects();
 
 // ──────────────────────────────────────────────────────────────────
-// Preview: Barkod (kur ndryshohet gjuha)
+// Preview: Barkod + Label (vetëm kur shtojmë libër të ri)
 // ──────────────────────────────────────────────────────────────────
+const barkodEl = document.getElementById('barkodPreview');
+const labelEl  = document.getElementById('labelPreview');
+
 function updateBarkodPreview() {
+  if (!barkodEl) return;
   const lang = document.getElementById('{{ form.language.id_for_label }}').value;
   if (!lang) return;
   fetch('{% url "next_copy_number_ajax" %}?language=' + encodeURIComponent(lang))
     .then(r => r.json())
-    .then(d => { document.getElementById('barkodPreview').textContent = d.copy_number || '—'; })
+    .then(d => { barkodEl.textContent = d.copy_number || '—'; })
     .catch(() => {});
 }
 
-// Preview: Label Rafti (kur ndryshohet class_number)
 function updateLabelPreview() {
+  if (!labelEl) return;
   const cn = document.getElementById('{{ form.class_number.id_for_label }}').value.trim();
-  if (!cn) { document.getElementById('labelPreview').textContent = '—'; return; }
+  if (!cn) { labelEl.textContent = '—'; return; }
   fetch('{% url "shelf_label_suggest" %}?class_number=' + encodeURIComponent(cn))
     .then(r => r.json())
-    .then(d => { document.getElementById('labelPreview').textContent = d.shelf_label || '—'; })
+    .then(d => { labelEl.textContent = d.shelf_label || '—'; })
     .catch(() => {});
 }
 
 document.getElementById('{{ form.language.id_for_label }}').addEventListener('change', updateBarkodPreview);
 document.getElementById('{{ form.class_number.id_for_label }}').addEventListener('input', updateLabelPreview);
-updateBarkodPreview();
-updateLabelPreview();
+if (barkodEl) updateBarkodPreview();
+if (labelEl)  updateLabelPreview();
 
 // ──────────────────────────────────────────────────────────────────
 // Kontroll dublikatësh: Titulli

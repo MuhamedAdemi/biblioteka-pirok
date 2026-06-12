@@ -1,3 +1,4 @@
+import difflib
 import secrets
 import string as _string
 
@@ -177,21 +178,67 @@ def book_isbn_check(request):
 # ── AUTHOR SEARCH (AJAX autocomplete) ────────────────────────────────────────
 
 @login_required
+def _fuzzy_find(all_objects, str_fn, query, limit=10, cutoff=0.68):
+    """
+    Kërkim me tre strategji: icontains → ndarje fjalësh → difflib fuzzy.
+    Kthehet lista objektesh (max limit).
+    """
+    q_lower = query.lower()
+    words   = q_lower.split()
+    scored  = {}  # pk → (obj, score)
+
+    for obj in all_objects:
+        text  = str_fn(obj).lower()
+        parts = text.split()
+        score = 0.0
+
+        # Strategji 1: fraza e plotë
+        if q_lower in text:
+            score = 2.0
+
+        # Strategji 2: çdo fjalë e pyetjes si nënstring
+        if score == 0:
+            for w in words:
+                if w in text:
+                    score += 1.0
+
+        # Strategji 3: difflib fuzzy midis fjalëve (gjen gabime shkrimi)
+        if score == 0 and len(q_lower) >= 3:
+            for w in words:
+                if len(w) < 3:
+                    continue
+                for p in parts:
+                    if len(p) < 3:
+                        continue
+                    r = difflib.SequenceMatcher(None, w, p).ratio()
+                    if r >= cutoff:
+                        score += r * 0.7
+                        break
+
+        if score > 0:
+            scored[obj.pk] = (obj, score)
+
+    sorted_res = sorted(scored.values(), key=lambda x: -x[1])
+    return [obj for obj, _ in sorted_res[:limit]]
+
+
 def author_search(request):
     q = request.GET.get('q', '').strip()
-    authors = Author.objects.filter(
-        Q(last_name__icontains=q) | Q(first_name__icontains=q)
-    )[:10]
-    data = [{'id': a.pk, 'text': str(a)} for a in authors]
-    return JsonResponse({'results': data})
+    if not q:
+        return JsonResponse({'results': []})
+    all_authors = list(Author.objects.all())
+    results = _fuzzy_find(all_authors, lambda a: f"{a.last_name} {a.first_name}", q)
+    return JsonResponse({'results': [{'id': a.pk, 'text': str(a)} for a in results]})
 
 
 @login_required
 def publisher_search(request):
     q = request.GET.get('q', '').strip()
-    pubs = Publisher.objects.filter(name__icontains=q)[:10]
-    data = [{'id': p.pk, 'text': str(p)} for p in pubs]
-    return JsonResponse({'results': data})
+    if not q:
+        return JsonResponse({'results': []})
+    all_pubs = list(Publisher.objects.all())
+    results  = _fuzzy_find(all_pubs, lambda p: p.name, q)
+    return JsonResponse({'results': [{'id': p.pk, 'text': str(p)} for p in results]})
 
 
 # ── BOOK MANAGEMENT ───────────────────────────────────────────────────────────
@@ -214,7 +261,9 @@ def book_add(request):
     return render(request, 'libra/book_form.html', {
         'form': form, 'formset': formset, 'action': 'Shto Libër',
         'existing_authors_json': '[]',
+        'initial_publisher_json': 'null',
         'book': None,
+        'copies': None,
     })
 
 
@@ -237,9 +286,15 @@ def book_edit(request, pk):
         {'id': ba.author.pk, 'text': str(ba.author)}
         for ba in book.book_authors.select_related('author').all()
     ]
+    initial_publisher = None
+    if book.publisher:
+        initial_publisher = {'id': str(book.publisher.pk), 'text': str(book.publisher)}
+    copies = book.copies.select_related('book').all()
     return render(request, 'libra/book_form.html', {
         'form': form, 'formset': formset, 'action': 'Ndrysho Libër', 'book': book,
         'existing_authors_json': _json.dumps(existing_authors),
+        'initial_publisher_json': _json.dumps(initial_publisher),
+        'copies': copies,
     })
 
 
@@ -843,9 +898,11 @@ def shelf_label_print(request):
 @login_required
 def subject_search(request):
     q = request.GET.get('q', '').strip()
-    subjects = Subject.objects.filter(name__icontains=q)[:15]
-    data = [{'id': s.pk, 'text': s.name} for s in subjects]
-    return JsonResponse({'results': data})
+    if not q:
+        return JsonResponse({'results': []})
+    all_subs = list(Subject.objects.all())
+    results  = _fuzzy_find(all_subs, lambda s: s.name, q, limit=15)
+    return JsonResponse({'results': [{'id': s.pk, 'text': s.name} for s in results]})
 
 
 @login_required
