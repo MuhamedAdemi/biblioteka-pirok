@@ -346,43 +346,47 @@ const existingAuthors  = {{ existing_authors_json|safe }};
 const initialPublisher = {{ initial_publisher_json|safe }};
 
 // ──────────────────────────────────────────────────────────────────
-// Tom Select: Publisher — AJAX kërkim (si autorët) + fuzzy server
+// Fuzzy score (shared): tolerant ndaj gabimeve shkrimi
 // ──────────────────────────────────────────────────────────────────
+function fuzzyScoreFn(search) {
+  var self = this;
+  var normal = self.getScoreFunction(search);
+  return function(item) {
+    var n = normal(item);
+    if (n > 0) return n;
+    var text = (item.text || '').toLowerCase();
+    var q = (search.query || '').toLowerCase();
+    if (!q) return 0;
+    var words = q.split(/\s+/);
+    var parts = text.split(/[\s,.]+/);
+    var totalScore = 0, totalWords = 0;
+    words.forEach(function(w) {
+      if (w.length < 3) return;
+      totalWords++;
+      parts.forEach(function(p) {
+        if (p.length < 3) return;
+        var matched = 0, j = 0;
+        for (var k = 0; k < p.length && j < w.length; k++) {
+          if (p[k] === w[j]) { matched++; j++; }
+        }
+        if (matched / Math.max(w.length, p.length) >= 0.62) totalScore += 0.4;
+      });
+    });
+    if (!totalWords) return 0;
+    return totalScore / totalWords;
+  };
+}
 
-// Fshi opsionet statike nga <select> (Django i gjeneron, por ne i
-// ngarkojmë me AJAX — vetëm opsioni i zgjedhur aktualisht mbetet)
-(function() {
-  const sel = document.getElementById('{{ form.publisher.id_for_label }}');
-  const currentVal = sel.value;
-  while (sel.options.length > 0) sel.remove(0);
-  const empty = new Option('', '', true, !currentVal);
-  sel.add(empty);
-  if (initialPublisher) {
-    const opt = new Option(initialPublisher.text, initialPublisher.id, false, true);
-    sel.add(opt);
-  }
-})();
-
+// ──────────────────────────────────────────────────────────────────
+// Tom Select: Publisher — static (Django renders all publishers)
+// ──────────────────────────────────────────────────────────────────
 const pubTS = new TomSelect('#{{ form.publisher.id_for_label }}', {
   placeholder: 'Shkruaj emrin e botuesit...',
   allowEmptyOption: true,
-  valueField: 'id',
-  labelField: 'text',
-  searchField: 'text',
-  create: false,
-  options: initialPublisher ? [{ id: String(initialPublisher.id), text: initialPublisher.text }] : [],
-  items:   initialPublisher ? [String(initialPublisher.id)] : [],
-  load: function(query, callback) {
-    if (query.length < 1) return callback();
-    fetch('{% url "publisher_search" %}?q=' + encodeURIComponent(query))
-      .then(r => r.json())
-      .then(d => callback(d.results.map(p => ({ id: String(p.id), text: p.text }))))
-      .catch(() => callback());
-  },
-  shouldLoad: q => q.length >= 1,
+  maxOptions: 500,
+  score: fuzzyScoreFn,
   render: {
     no_results: () => '<div class="no-results">Nuk u gjet. Shto botues të ri me butonin <strong>+</strong>.</div>',
-    loading:    () => '<div class="no-results">Duke kërkuar…</div>',
   },
 });
 
@@ -391,46 +395,26 @@ pubTS.on('change', function() {
 });
 
 // ──────────────────────────────────────────────────────────────────
-// Tom Select: Subjects (multi me kërkim)
+// Tom Select: Subjects (multi me kërkim + fuzzy)
 // ──────────────────────────────────────────────────────────────────
 new TomSelect('#{{ form.subjects.id_for_label }}', {
   plugins: ['remove_button'],
   placeholder: 'Kërko kategori (anglisht)...',
   maxOptions: 200,
+  score: fuzzyScoreFn,
 });
 
 // ──────────────────────────────────────────────────────────────────
-// Tom Select: Autorët — AJAX kërkim + opcione ekzistuese
+// Tom Select: Autorët — static (Django renders all) + fuzzy score
 // ──────────────────────────────────────────────────────────────────
 function initAuthorSelects() {
   document.querySelectorAll('select[name$="-author"]').forEach(function(el) {
     if (el.tomselect) return;
-    const currentVal = el.value;
-    // Gjej opcionin ekzistues (për edit) ose nga lista statike
-    let initialOpts = existingAuthors.length ? existingAuthors : [];
-    // Nëse ka vlerë nga Django (static select), merre nga options ekzistuese
-    const staticOpt = el.querySelector(`option[value="${currentVal}"]`);
-    if (staticOpt && currentVal && !initialOpts.find(a => String(a.id) === String(currentVal))) {
-      initialOpts = [...initialOpts, { id: currentVal, text: staticOpt.textContent.trim() }];
-    }
-
     new TomSelect(el, {
-      valueField: 'id',
-      labelField: 'text',
-      searchField: 'text',
-      create: false,
       allowEmptyOption: true,
       placeholder: 'Kërko autor (mbiemri, emri)...',
-      options: initialOpts,
-      items: currentVal ? [String(currentVal)] : [],
-      load: function(query, callback) {
-        if (query.length < 1) return callback();
-        fetch('{% url "author_search" %}?q=' + encodeURIComponent(query))
-          .then(r => r.json())
-          .then(d => callback(d.results))
-          .catch(() => callback());
-      },
-      shouldLoad: function(q) { return q.length > 0; },
+      maxOptions: 500,
+      score: fuzzyScoreFn,
       render: {
         no_results: function() {
           return '<div class="no-results">Nuk u gjet. Shto autor të ri me butonin lart.</div>';
@@ -546,8 +530,8 @@ document.getElementById('btnShtojAutor').addEventListener('click', function() {
     if (data.error) { gabim.textContent = data.error; gabim.classList.remove('d-none'); return; }
     document.querySelectorAll('select[name$="-author"]').forEach(sel => {
       if (sel.tomselect) {
-        sel.tomselect.addOption({id: data.id, text: data.text});
-        sel.tomselect.setValue(data.id);
+        sel.tomselect.addOption({value: String(data.id), text: data.text});
+        sel.tomselect.setValue(String(data.id));
       }
     });
     document.getElementById('autorMbiemri').value = '';
@@ -598,8 +582,8 @@ document.getElementById('btnShtojBotues').addEventListener('click', function() {
     if (data.error) { gabim.textContent = data.error; gabim.classList.remove('d-none'); return; }
     const sel = document.getElementById('{{ form.publisher.id_for_label }}');
     if (sel.tomselect) {
-      sel.tomselect.addOption({value: data.id, text: data.text});
-      sel.tomselect.setValue(data.id);
+      sel.tomselect.addOption({value: String(data.id), text: data.text});
+      sel.tomselect.setValue(String(data.id));
     }
     document.getElementById('botuesEmri').value = '';
     document.getElementById('botuesQyteti').value = '';
