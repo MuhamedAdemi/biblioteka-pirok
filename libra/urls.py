@@ -32,10 +32,19 @@ urlpatterns = [
     path('autore/', views.author_list, name='author_list'),
     path('autore/shto/', views.author_add, name='author_add'),
     path('autore/<int:pk>/ndrysho/', views.author_edit, name='author_edit'),
+    path('autore/<int:pk>/fshi/', views.author_delete, name='author_delete'),
 
     # Publishers
     path('botues/', views.publisher_list, name='publisher_list'),
     path('botues/shto/', views.publisher_add, name='publisher_add'),
+    path('botues/<int:pk>/ndrysho/', views.publisher_edit, name='publisher_edit'),
+    path('botues/<int:pk>/fshi/', views.publisher_delete, name='publisher_delete'),
+
+    # Categories / Subjects
+    path('kategori/', views.subject_list, name='subject_list'),
+    path('kategori/shto/', views.subject_add, name='subject_add'),
+    path('kategori/<int:pk>/ndrysho/', views.subject_edit, name='subject_edit'),
+    path('kategori/<int:pk>/fshi/', views.subject_delete, name='subject_delete'),
 
     # Members
     path('anetaret/', views.member_list, name='member_list'),

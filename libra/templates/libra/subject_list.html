@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Botuesit – Biblioteka Pirok{% endblock %}
+{% block title %}Kategoritë – Biblioteka Pirok{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h4 class="mb-0"><i class="bi bi-building me-2"></i>Botuesit</h4>
-  <a href="{% url 'publisher_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Shto Botues</a>
+  <h4 class="mb-0"><i class="bi bi-tags me-2"></i>Kategoritë / Lëndët</h4>
+  <a href="{% url 'subject_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Shto Kategori</a>
 </div>
 
 {% if messages %}
@@ -19,15 +19,15 @@
   <div class="card-body py-2">
     <form method="get" class="d-flex gap-2">
       <input type="text" name="q" value="{{ q }}" class="form-control"
-             placeholder="Kërko me emër ose qytet..." autofocus>
+             placeholder="Kërko kategori..." autofocus>
       <button type="submit" class="btn btn-dark"><i class="bi bi-search"></i></button>
-      {% if q %}<a href="{% url 'publisher_list' %}" class="btn btn-outline-secondary">Pastro</a>{% endif %}
+      {% if q %}<a href="{% url 'subject_list' %}" class="btn btn-outline-secondary">Pastro</a>{% endif %}
     </form>
   </div>
 </div>
 
 {% if q %}
-<p class="text-muted small mb-2">{{ publishers|length }} rezultat{% if publishers|length != 1 %}e{% endif %} për "<strong>{{ q }}</strong>"</p>
+<p class="text-muted small mb-2">{{ subjects|length }} rezultat{% if subjects|length != 1 %}e{% endif %} për "<strong>{{ q }}</strong>"</p>
 {% endif %}
 
 <div class="card">
@@ -35,47 +35,43 @@
     <table class="table table-hover mb-0 align-middle">
       <thead>
         <tr>
-          <th>Emri</th>
-          <th>Qyteti</th>
-          <th>Shteti</th>
-          <th class="text-center" style="width:70px">Libra</th>
+          <th>Emri (anglisht)</th>
+          <th class="text-center" style="width:80px">Libra</th>
           <th style="width:110px">Veprimet</th>
         </tr>
       </thead>
       <tbody>
-        {% for p in publishers %}
+        {% for s in subjects %}
         <tr>
-          <td class="fw-semibold">{{ p.name }}</td>
-          <td>{{ p.city|default:"-" }}</td>
-          <td>{{ p.country|default:"-" }}</td>
+          <td>{{ s.name }}</td>
           <td class="text-center">
-            <span class="badge {% if p.book_count %}bg-secondary{% else %}bg-light text-muted border{% endif %}">
-              {{ p.book_count }}
+            <span class="badge {% if s.book_count %}bg-secondary{% else %}bg-light text-muted border{% endif %}">
+              {{ s.book_count }}
             </span>
           </td>
           <td>
-            <a href="{% url 'publisher_edit' p.pk %}" class="btn btn-sm btn-outline-secondary" title="Ndrysho">
+            <a href="{% url 'subject_edit' s.pk %}" class="btn btn-sm btn-outline-secondary" title="Ndrysho">
               <i class="bi bi-pencil"></i>
             </a>
             <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                    data-name="{{ p }}"
-                    data-usage="{% if p.book_count %}I lidhur me {{ p.book_count }} libra — librat mbeten por botuesi hiqet.{% else %}Nuk është i lidhur me asnjë libër.{% endif %}"
-                    data-url="{% url 'publisher_delete' p.pk %}"
+                    data-name="{{ s.name }}"
+                    data-usage="{% if s.book_count %}E lidhur me {{ s.book_count }} libra — librat mbeten por kategoria hiqet.{% else %}Nuk është e lidhur me asnjë libër.{% endif %}"
+                    data-url="{% url 'subject_delete' s.pk %}"
                     title="Fshi">
               <i class="bi bi-trash3"></i>
             </button>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-4">
-          {% if q %}Asnjë botues nuk u gjet për "{{ q }}".{% else %}Asnjë botues.{% endif %}
+        <tr><td colspan="3" class="text-center text-muted py-4">
+          {% if q %}Asnjë kategori nuk u gjet për "{{ q }}".{% else %}Asnjë kategori.{% endif %}
         </td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-<p class="text-muted small mt-2">Gjithsej: {{ publishers|length }} botues</p>
+<p class="text-muted small mt-2">Gjithsej: {{ subjects|length }} kategori</p>
 
 <!-- Modal konfirmimi për fshirje -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -86,7 +82,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p class="mb-1">Do të fshihet botuesi:</p>
+        <p class="mb-1">Do të fshihet kategoria:</p>
         <p class="fw-bold fs-6" id="deleteItemName"></p>
         <p class="small text-muted" id="deleteItemUsage"></p>
       </div>

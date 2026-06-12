@@ -350,6 +350,8 @@
           <i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
         <li><a class="nav-link" href="{% url 'publisher_list' %}" data-bs-dismiss="offcanvas">
           <i class="bi bi-building me-2"></i>Botuesit</a></li>
+        <li><a class="nav-link" href="{% url 'subject_list' %}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-tags me-2"></i>Kategoritë</a></li>
       </ul>
       <div class="section-label">Anëtarët</div>
       <ul class="nav flex-column mb-2">
@@ -425,6 +427,8 @@
           <i class="bi bi-person-lines-fill me-2"></i>Autorët</a></li>
         <li><a class="nav-link {% if request.resolver_match.url_name == 'publisher_list' %}active{% endif %}" href="{% url 'publisher_list' %}">
           <i class="bi bi-building me-2"></i>Botuesit</a></li>
+        <li><a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}">
+          <i class="bi bi-tags me-2"></i>Kategoritë</a></li>
       </ul>
       <div class="section-label">Anëtarët</div>
       <ul class="nav flex-column mb-1">

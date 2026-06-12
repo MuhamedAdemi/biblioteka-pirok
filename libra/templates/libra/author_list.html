@@ -7,6 +7,14 @@
   <a href="{% url 'author_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Shto Autor</a>
 </div>
 
+{% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
 <div class="card mb-3">
   <div class="card-body py-2">
     <form method="get" class="d-flex gap-2">
@@ -24,21 +32,40 @@
 
 <div class="card">
   <div class="card-body p-0">
-    <table class="table table-hover mb-0">
-      <thead><tr><th>Mbiemri</th><th>Emri</th><th>Veprimet</th></tr></thead>
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Mbiemri</th>
+          <th>Emri</th>
+          <th class="text-center" style="width:70px">Libra</th>
+          <th style="width:100px">Veprimet</th>
+        </tr>
+      </thead>
       <tbody>
         {% for a in authors %}
         <tr>
           <td class="fw-semibold">{{ a.last_name }}</td>
           <td>{{ a.first_name|default:"-" }}</td>
+          <td class="text-center">
+            <span class="badge {% if a.book_count %}bg-secondary{% else %}bg-light text-muted border{% endif %}">
+              {{ a.book_count }}
+            </span>
+          </td>
           <td>
-            <a href="{% url 'author_edit' a.pk %}" class="btn btn-sm btn-outline-secondary">
+            <a href="{% url 'author_edit' a.pk %}" class="btn btn-sm btn-outline-secondary" title="Ndrysho">
               <i class="bi bi-pencil"></i>
             </a>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
+                    data-name="{{ a }}"
+                    data-usage="{% if a.book_count %}I lidhur me {{ a.book_count }} libra — pasi fshihet, librat mbeten por autori hiqet.{% else %}Nuk është i lidhur me asnjë libër.{% endif %}"
+                    data-url="{% url 'author_delete' a.pk %}"
+                    title="Fshi">
+              <i class="bi bi-trash3"></i>
+            </button>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="3" class="text-center text-muted py-4">
+        <tr><td colspan="4" class="text-center text-muted py-4">
           {% if q %}Asnjë autor nuk u gjet për "{{ q }}".{% else %}Asnjë autor.{% endif %}
         </td></tr>
         {% endfor %}
@@ -46,4 +73,42 @@
     </table>
   </div>
 </div>
+<p class="text-muted small mt-2">Gjithsej: {{ authors|length }} autorë</p>
+
+<!-- Modal konfirmimi për fshirje -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-danger bg-opacity-10">
+        <h6 class="modal-title text-danger"><i class="bi bi-trash3 me-2"></i>Konfirmo fshirjen</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">Do të fshihet autori:</p>
+        <p class="fw-bold fs-6" id="deleteItemName"></p>
+        <p class="small text-muted" id="deleteItemUsage"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Anulo</button>
+        <form method="post" id="deleteForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash3 me-1"></i>Po, Fshi
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-delete').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.getElementById('deleteItemName').textContent = btn.dataset.name;
+    document.getElementById('deleteItemUsage').textContent = btn.dataset.usage;
+    document.getElementById('deleteForm').action = btn.dataset.url;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+  });
+});
+</script>
 {% endblock %}

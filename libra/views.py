@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 
 from .models import Book, Author, Publisher, Member, Loan, Subject, BookAuthor, BookCopy, BarcodeLog
@@ -370,11 +370,12 @@ def book_copy_delete(request, copy_pk):
 @login_required
 def author_list(request):
     q = request.GET.get('q', '').strip()
-    authors = Author.objects.all()
+    authors = Author.objects.annotate(book_count=Count('bookauthor', distinct=True))
     if q:
         authors = authors.filter(
             Q(last_name__icontains=q) | Q(first_name__icontains=q)
         )
+    authors = authors.order_by('last_name', 'first_name')
     return render(request, 'libra/author_list.html', {'authors': authors, 'q': q})
 
 
@@ -410,11 +411,12 @@ def author_edit(request, pk):
 @login_required
 def publisher_list(request):
     q = request.GET.get('q', '').strip()
-    publishers = Publisher.objects.all()
+    publishers = Publisher.objects.annotate(book_count=Count('book', distinct=True))
     if q:
         publishers = publishers.filter(
             Q(name__icontains=q) | Q(city__icontains=q)
         )
+    publishers = publishers.order_by('name')
     return render(request, 'libra/publisher_list.html', {'publishers': publishers, 'q': q})
 
 
@@ -429,6 +431,96 @@ def publisher_add(request):
     else:
         form = PublisherForm()
     return render(request, 'libra/publisher_form.html', {'form': form, 'action': 'Shto Botues'})
+
+
+@login_required
+def publisher_edit(request, pk):
+    pub = get_object_or_404(Publisher, pk=pk)
+    if request.method == 'POST':
+        form = PublisherForm(request.POST, instance=pub)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Botuesi u përditësua.')
+            return redirect('publisher_list')
+    else:
+        form = PublisherForm(instance=pub)
+    return render(request, 'libra/publisher_form.html', {
+        'form': form, 'action': 'Ndrysho Botues', 'publisher': pub
+    })
+
+
+@login_required
+def author_delete(request, pk):
+    author = get_object_or_404(Author, pk=pk)
+    if request.method == 'POST':
+        name = str(author)
+        author.delete()
+        messages.success(request, f'Autori "{name}" u fshi.')
+    return redirect('author_list')
+
+
+@login_required
+def publisher_delete(request, pk):
+    pub = get_object_or_404(Publisher, pk=pk)
+    if request.method == 'POST':
+        name = str(pub)
+        pub.delete()
+        messages.success(request, f'Botuesi "{name}" u fshi.')
+    return redirect('publisher_list')
+
+
+@login_required
+def subject_list(request):
+    q = request.GET.get('q', '').strip()
+    subjects = Subject.objects.annotate(book_count=Count('book', distinct=True))
+    if q:
+        subjects = subjects.filter(name__icontains=q)
+    subjects = subjects.order_by('name')
+    return render(request, 'libra/subject_list.html', {'subjects': subjects, 'q': q})
+
+
+@login_required
+def subject_add(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            existing = Subject.objects.filter(name__iexact=name).first()
+            if existing:
+                subj, created = existing, False
+            else:
+                subj = Subject.objects.create(name=name)
+                created = True
+            if created:
+                messages.success(request, f'Kategoria "{name}" u shtua.')
+            else:
+                messages.warning(request, f'Kategoria "{subj.name}" ekziston tashmë.')
+            return redirect('subject_list')
+    return render(request, 'libra/subject_form.html', {'action': 'Shto Kategori'})
+
+
+@login_required
+def subject_edit(request, pk):
+    subj = get_object_or_404(Subject, pk=pk)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            subj.name = name
+            subj.save()
+            messages.success(request, 'Kategoria u përditësua.')
+            return redirect('subject_list')
+    return render(request, 'libra/subject_form.html', {
+        'action': 'Ndrysho Kategori', 'subject': subj
+    })
+
+
+@login_required
+def subject_delete(request, pk):
+    subj = get_object_or_404(Subject, pk=pk)
+    if request.method == 'POST':
+        name = subj.name
+        subj.delete()
+        messages.success(request, f'Kategoria "{name}" u fshi.')
+    return redirect('subject_list')
 
 
 # ── MEMBERS ───────────────────────────────────────────────────────────────────
