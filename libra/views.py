@@ -321,31 +321,58 @@ def book_copy_list(request, pk):
     return render(request, 'libra/book_copy_list.html', {'book': book, 'copies': copies})
 
 
+_LANG_PREFIX = {'sq': '101', 'mk': '201', 'en': '301', 'other': '401'}
+_LANG_NAMES  = {'sq': 'Shqip', 'mk': 'Maqedonisht', 'en': 'Anglisht', 'other': 'Gjuhë tjera'}
+_PREFIX_LANG = {v: k for k, v in _LANG_PREFIX.items()}
+
 @login_required
 def book_copy_add(request, pk):
     book = get_object_or_404(Book, pk=pk)
+    expected_prefix   = _LANG_PREFIX.get(book.language) if book.language else None
+    language_display  = _LANG_NAMES.get(book.language, '') if book.language else ''
+
+    prefix_error = None
+
     if request.method == 'POST':
         form = BookCopyForm(request.POST)
         if form.is_valid():
-            copy = form.save(commit=False)
-            copy.book = book
-            copy.shelf_label = BookCopy.suggest_shelf_label(book.class_number)
-            copy.save()
-            messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
-            total_labels = BookCopy.objects.filter(shelf_label__gt='').count()
-            if total_labels > 0 and total_labels % 56 == 0:
-                messages.info(
-                    request,
-                    f'Faqe etikete e plotë — {total_labels} etiketa ({total_labels // 56} × 56). '
-                    f'Shko te Etiketa Rafti dhe printo faqen e re.'
+            copy_number    = form.cleaned_data['copy_number']
+            entered_prefix = copy_number[:3]
+
+            if not expected_prefix:
+                prefix_error = 'no_language'
+            elif entered_prefix != expected_prefix:
+                entered_lang = _LANG_NAMES.get(_PREFIX_LANG.get(entered_prefix, ''), 'gjuhë tjetër')
+                prefix_error = (
+                    f'Kodi <strong>{copy_number}</strong> është për gjuhën '
+                    f'<strong>{entered_lang}</strong>. Ky libër është '
+                    f'<strong>{language_display}</strong> — duhet prefiks '
+                    f'<strong>{expected_prefix}</strong>.'
                 )
-            return redirect('book_copy_list', pk=pk)
+            else:
+                copy = form.save(commit=False)
+                copy.book = book
+                copy.shelf_label = BookCopy.suggest_shelf_label(book.class_number)
+                copy.save()
+                messages.success(request, f'Kopja [{copy.copy_number}] u shtua.')
+                total_labels = BookCopy.objects.filter(shelf_label__gt='').count()
+                if total_labels > 0 and total_labels % 56 == 0:
+                    messages.info(
+                        request,
+                        f'Faqe etikete e plotë — {total_labels} etiketa ({total_labels // 56} × 56). '
+                        f'Shko te Etiketa Rafti dhe printo faqen e re.'
+                    )
+                return redirect('book_copy_list', pk=pk)
     else:
         form = BookCopyForm()
+
     return render(request, 'libra/book_copy_form.html', {
         'form': form,
         'book': book,
         'class_number': book.class_number,
+        'expected_prefix':  expected_prefix,
+        'language_display': language_display,
+        'prefix_error':     prefix_error,
     })
 
 

@@ -11,6 +11,40 @@
       {% if class_number %}&nbsp;·&nbsp;Dewey: <code>{{ class_number }}</code>{% endif %}
     </p>
 
+    {% if not expected_prefix %}
+    <!-- ── Libri nuk ka gjuhë — blloko shtimin ─────────────────── -->
+    <div class="alert alert-danger d-flex gap-3 align-items-start">
+      <i class="bi bi-exclamation-triangle-fill fs-4 flex-shrink-0 mt-1"></i>
+      <div>
+        <strong>Ky libër nuk ka gjuhë të caktuar!</strong>
+        <p class="mb-2 mt-1 small">
+          Para se të shtosh kopje fizike, duhet të caktosh gjuhën e librit.
+          Gjuha përcakton prefiks-in e numrit (101=Shqip, 201=Maqedon., 301=Anglisht, 401=Tjera).
+        </p>
+        <a href="{% url 'book_edit' book.pk %}" class="btn btn-warning btn-sm">
+          <i class="bi bi-pencil me-1"></i>Ndrysho Librin — Cakto Gjuhën
+        </a>
+        <a href="{% url 'book_copy_list' book.pk %}" class="btn btn-outline-secondary btn-sm ms-2">Kthehu</a>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- ── Forma kryesore ─────────────────────────────────────── -->
+
+    <!-- Hint gjuha + prefiksi i pritur -->
+    <div class="alert alert-info py-2 mb-3 small">
+      <i class="bi bi-info-circle me-1"></i>
+      Gjuha e librit: <strong>{{ language_display }}</strong>
+      &nbsp;→&nbsp; Prefiks i saktë: <strong class="font-monospace fs-6">{{ expected_prefix }}</strong>
+      &nbsp;(p.sh. <code>{{ expected_prefix }}-00001</code>)
+    </div>
+
+    {% if prefix_error %}
+    <div class="alert alert-danger py-2 small">
+      <i class="bi bi-x-circle-fill me-1"></i>{{ prefix_error|safe }}
+    </div>
+    {% endif %}
+
     <div class="card">
       <div class="card-body">
         <form method="post" id="copy-form">
@@ -24,7 +58,7 @@
                    name="copy_number"
                    id="id_copy_number"
                    class="form-control form-control-lg text-center font-monospace"
-                   placeholder="101-00001"
+                   placeholder="{{ expected_prefix }}-00001"
                    autocomplete="off"
                    spellcheck="false"
                    autofocus
@@ -60,28 +94,36 @@
       </div>
     </div>
 
+    {% endif %}{# end expected_prefix #}
+
   </div>
 </div>
 
+{% if expected_prefix %}
 <script>
 (function() {
-  const input     = document.getElementById('id_copy_number');
-  const feedback  = document.getElementById('cn-feedback');
-  const btnSubmit = document.getElementById('btn-submit');
-  const checkUrl  = '{% url "check_copy_number_ajax" %}';
+  const input        = document.getElementById('id_copy_number');
+  const feedback     = document.getElementById('cn-feedback');
+  const btnSubmit    = document.getElementById('btn-submit');
+  const checkUrl     = '{% url "check_copy_number_ajax" %}';
+  const EXPECTED     = '{{ expected_prefix }}';
+  const LANG_DISPLAY = '{{ language_display }}';
+
+  /* Emrat e gjuhëve sipas prefiksit */
+  const LANG_NAMES = { '101': 'Shqip', '201': 'Maqedonisht', '301': 'Anglisht', '401': 'Gjuhë tjera' };
 
   /* Formati strikt: saktësisht 101/201/301/401 + vizë + saktësisht 5 shifra */
   const PATTERN = /^(101|201|301|401)-\d{5}$/;
 
-  let timer       = null;
-  let currentVal  = '';
+  let timer      = null;
+  let currentVal = '';
 
   function fb(type, html) {
-    /* type: 'ok' | 'err' | 'wait' */
     const cfg = {
-      ok:   { icon: 'check-circle-fill',       cls: 'text-success' },
-      err:  { icon: 'x-circle-fill',           cls: 'text-danger'  },
-      wait: { icon: 'hourglass-split',          cls: 'text-muted'   },
+      ok:   { icon: 'check-circle-fill',  cls: 'text-success' },
+      err:  { icon: 'x-circle-fill',      cls: 'text-danger'  },
+      warn: { icon: 'exclamation-triangle-fill', cls: 'text-warning' },
+      wait: { icon: 'hourglass-split',    cls: 'text-muted'   },
     };
     const c = cfg[type] || cfg.wait;
     feedback.innerHTML = html
@@ -90,8 +132,7 @@
   }
 
   function onResult(exists, value) {
-    if (value !== currentVal) return;   /* ignore stale responses */
-
+    if (value !== currentVal) return;
     if (exists) {
       fb('err', `Numri <strong>${value}</strong> është tashmë i regjistruar. Skano ose shkruaj numër tjetër.`);
       btnSubmit.disabled = true;
@@ -108,11 +149,9 @@
     const val = input.value.trim();
     currentVal = val;
 
-    if (!val) {
-      fb('', '');
-      return;
-    }
+    if (!val) { fb('', ''); return; }
 
+    /* 1) Kontrollo formatin */
     if (!PATTERN.test(val)) {
       fb('err',
         'Formati nuk pranohet. Duhet saktësisht: ' +
@@ -121,22 +160,33 @@
       return;
     }
 
-    /* Formati OK → kontrollo duplikat */
+    /* 2) Kontrollo gjuhën (prefiksin) */
+    const enteredPrefix = val.substring(0, 3);
+    if (enteredPrefix !== EXPECTED) {
+      const enteredLang = LANG_NAMES[enteredPrefix] || 'gjuhë tjetër';
+      fb('err',
+        `Kodi <strong>${val}</strong> është për gjuhën <strong>${enteredLang}</strong>.<br>` +
+        `Ky libër është <strong>${LANG_DISPLAY}</strong> — duhet prefiks <strong>${EXPECTED}</strong>.`
+      );
+      return;
+    }
+
+    /* 3) Format + gjuha OK → kontrollo duplikat */
     fb('wait', 'Duke kontrolluar…');
-    timer = setTimeout(() => {
+    timer = setTimeout(function() {
       fetch(checkUrl + '?copy_number=' + encodeURIComponent(val))
-        .then(r => r.json())
-        .then(d => onResult(d.exists, d.copy_number))
-        .catch(() => fb('', ''));
+        .then(function(r) { return r.json(); })
+        .then(function(d) { onResult(d.exists, d.copy_number); })
+        .catch(function() { fb('', ''); });
     }, 350);
   }
 
   input.addEventListener('input', handleInput);
 
-  /* Bloko submit nëse butoni është disabled (siguri shtesë) */
   document.getElementById('copy-form').addEventListener('submit', function(e) {
     if (btnSubmit.disabled) e.preventDefault();
   });
 })();
 </script>
+{% endif %}
 {% endblock %}
